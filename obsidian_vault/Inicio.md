@@ -16,6 +16,7 @@ Bienvenido al baúl de conocimiento de **Neuro Vision**. Este baúl ha sido estr
 *   [[Algoritmos_Analisis]]: Detalle de los cálculos matemáticos para el análisis de temblores (FFT), ángulos y cinemática facial.
 
 ### 📄 Documentación del Repositorio
+*   [[Backlog_Jira]]: Backlog del tablero Kanban oficial en Jira Cloud (`KAN-4` a `KAN-25`).
 *   [[Estructura_Proyecto]]: Ubicación y propósito de cada archivo del proyecto.
 *   [[Plan_de_Implementacion]]: Historial del plan de desarrollo aprobado.
 *   [[Walkthrough]]: Historial de compilaciones y control de calidad (QA).

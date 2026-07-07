@@ -1,0 +1,33 @@
+Qué
+Quiero desarrollar una aplicación que permita realizar y analizar de forma automática diferentes pruebas funcionales del movimiento mediante visión computacional, utilizando landmarks corporales y faciales obtenidos con librerías open source como OpenCV y MediaPipe, e integrada con información proveniente de dispositivos como teléfonos celulares, relojes inteligentes y sensores inerciales. El operador únicamente deberá configurar los parámetros necesarios para cada evaluación, mientras que el sistema automatizará la adquisición, procesamiento, análisis, comparación e informe de los resultados.
+
+
+El software medirá diferentes dimensiones del movimiento:
+1. Análisis facial
+Medición de la amplitud de movimiento de landmarks faciales.
+El usuario podrá seleccionar qué landmarks desea evaluar.
+Comparación automática entre estudios pre y postratamiento.
+2. Análisis de la marcha
+Medición de la amplitud del paso, definida como la distancia entre los landmarks correspondientes a ambos talones en una vista lateral.
+Comparación automática entre evaluaciones.
+3. Análisis articular
+Medición automática de los rangos articulares.
+El usuario podrá seleccionar qué articulaciones desea analizar.
+Soporte para hombro, codo, muñeca, cadera, rodilla y tobillo, de ambos lados.
+Comparación automática entre estudios pre y postratamiento.
+Como una segunda capa de complejidad, el software incorporará un módulo específico para la enfermedad de Parkinson, basado en los criterios de la UPDRS III. Este módulo integrará, además de las métricas obtenidas mediante visión computacional, información en tiempo real proveniente de acelerómetros y giroscopios de teléfonos celulares y relojes inteligentes para la evaluación objetiva del temblor y otros parámetros motores.
+Como una tercera capa de complejidad, el sistema evolucionará hacia un laboratorio básico de análisis de la marcha, integrando información proveniente de dos o más cámaras sincronizadas desde diferentes perspectivas, utilizando visión computacional para mejorar la precisión de las mediciones y ampliar el conjunto de parámetros biomecánicos evaluados.
+Finalmente, el software permitirá:
+Exportar los datos crudos en formato Excel.
+Generar gráficos de barras comparando las amplitudes máximas pre y postratamiento.
+Generar gráficos de evolución temporal de las variables medidas.
+Generar informes automáticos mediante IA generativa, interpretando los resultados cuantitativos y redactando un informe clínico estructurado.
+
+
+Para qué
+Obtener evaluaciones objetivas, precisas y reproducibles del movimiento, reduciendo la subjetividad de las pruebas que actualmente dependen de la observación clínica.
+Facilitar el seguimiento evolutivo de pacientes con patologías neurológicas y de la marcha, incluyendo:
+Hidrocefalia normotensiva, mediante la evaluación objetiva de la amplitud del paso antes y después de distintos tratamientos.
+Espasticidad, cuantificando objetivamente la rigidez y el rango de movimiento antes y después de las intervenciones terapéuticas.
+Enfermedad de Parkinson, tanto para apoyo al diagnóstico como para el seguimiento posoperatorio de la estimulación cerebral profunda (DBS) y la optimización de la programación de sus parámetros mediante la evaluación objetiva de la marcha, postura, rigidez, temblor, bradicinesia y movimiento facial.
+Asimismo, sentar las bases para el desarrollo de un laboratorio básico de análisis de la marcha, aplicable posteriormente a otras patologías neurológicas, ortopédicas y de rehabilitación.
