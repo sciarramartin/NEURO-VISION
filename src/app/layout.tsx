@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.compiled.css';
 import { AppProvider } from '@/contexto_global/AppContext';
+import { ThemeProvider } from '@/contexto_global/ThemeContext';
 import NavigationSidebar from '@/componentes_visuales/NavigationSidebar';
 
 export const metadata: Metadata = {
@@ -15,15 +16,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="h-full">
-      <body className="h-full bg-zinc-950 text-zinc-100 antialiased">
-        <AppProvider>
-          <div className="app-container">
-            <NavigationSidebar />
-            <main className="min-h-screen overflow-y-auto bg-zinc-950">
-              {children}
-            </main>
-          </div>
-        </AppProvider>
+      <body className="h-full antialiased">
+        <ThemeProvider>
+          <AppProvider>
+            <div className="app-container">
+              <NavigationSidebar />
+              <main className="min-h-screen overflow-y-auto">
+                {children}
+              </main>
+            </div>
+          </AppProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
