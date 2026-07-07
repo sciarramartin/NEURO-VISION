@@ -128,18 +128,18 @@ export function CaptureView() {
       ? (slotsPersonalizados as [number, number, number])
       : null;
 
+  // ── KAN-10 M5: tracking quality ────────────────────────────────────────────
+  const [trackingQuality, setTrackingQuality] = useState<CalidadTracking | null>(null);
+
+  // ── Recording ──────────────────────────────────────────────────────────────
+  const [isCameraActive, setIsCameraActive] = useState(false);
+
   // Reset zoom when camera goes inactive
   useEffect(() => {
     if (!isCameraActive) {
       setZoom(1);
     }
   }, [isCameraActive]);
-
-  // ── KAN-10 M5: tracking quality ────────────────────────────────────────────
-  const [trackingQuality, setTrackingQuality] = useState<CalidadTracking | null>(null);
-
-  // ── Recording ──────────────────────────────────────────────────────────────
-  const [isCameraActive, setIsCameraActive] = useState(false);
   const [isRecording, setIsRecording]       = useState(false);
   const [timerText, setTimerText]           = useState('00:00:00');
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -428,6 +428,7 @@ export function CaptureView() {
                 isMockMode={isMockMode}
                 landmarksPersonalizados={landmarksPersonalizados}
                 modoSeleccionActivo={modoSeleccionActivo && !isRecording}
+                zoom={zoom}
                 onDataCollected={handleDataCollected}
                 onTrackingQuality={setTrackingQuality}
                 onLandmarkClick={handleLandmarkClick}
@@ -516,6 +517,30 @@ export function CaptureView() {
                 ✦ Puntos personalizados activos [{landmarksPersonalizados.join(' → ')}]
               </div>
             )}
+
+            {/* Floating Zoom Control */}
+            {isCameraActive && (
+              <div className="absolute bottom-4 right-4 bg-zinc-950/80 border border-zinc-800/80 rounded-lg px-2.5 py-1.5 flex items-center gap-2 z-10 shadow-lg backdrop-blur-sm">
+                <span className="text-[10px] font-mono text-zinc-400 font-bold">Zoom: {zoom.toFixed(1)}x</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.1"
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="w-20 accent-indigo-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                  title="Arrastre para hacer zoom sobre el rostro"
+                />
+                <button
+                  onClick={() => setZoom(1)}
+                  className="text-[9px] font-mono text-zinc-400 hover:text-zinc-200 border border-zinc-800 px-1 py-0.5 rounded transition-colors"
+                  title="Restablecer a 1x"
+                >
+                  Reset
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Controls bar */}
@@ -577,24 +602,38 @@ export function CaptureView() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex flex-col gap-1 text-xs">
               <span className="flex items-center gap-1 text-zinc-500 font-bold uppercase tracking-wider">
-                Modo Ejecución:
+                Modo Ejecución
                 <TooltipAyuda
                   posicion="top"
-                  texto="Simulado: usa datos sintéticos sin cámara, ideal para desarrollo. Real: activa MediaPipe con webcam para captura clínica auténtica. Cambie ANTES de activar la cámara."
+                  texto="Simulado: usa datos pre-grabados sin cámara. Real: usa la webcam y visión por computadora con MediaPipe."
                 />
               </span>
-              <button
-                onClick={() => setIsMockMode(!isMockMode)}
-                className={`px-3 py-1.5 rounded font-semibold transition-all ${
-                  isMockMode
-                    ? 'bg-amber-950/30 border border-amber-900/30 text-amber-400'
-                    : 'bg-emerald-950/30 border border-emerald-900/30 text-emerald-400'
-                }`}
-              >
-                {isMockMode ? 'Simulado (Sin Cámara)' : 'Visión por Computadora (Real)'}
-              </button>
+              <div className="flex border border-zinc-800 rounded overflow-hidden bg-zinc-950 max-w-[280px]">
+                <button
+                  onClick={() => !isRecording && setIsMockMode(true)}
+                  disabled={isRecording}
+                  className={`flex-1 text-[11px] font-bold py-1.5 px-3 transition-all ${
+                    isMockMode
+                      ? 'bg-amber-950/30 text-amber-400 border-r border-zinc-800/40'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Simulado
+                </button>
+                <button
+                  onClick={() => !isRecording && setIsMockMode(false)}
+                  disabled={isRecording}
+                  className={`flex-1 text-[11px] font-bold py-1.5 px-3 transition-all ${
+                    !isMockMode
+                      ? 'bg-emerald-950/30 text-emerald-400 border-l border-zinc-800/40'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  Cámara Real
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -615,30 +654,26 @@ export function CaptureView() {
             <div className="flex flex-col gap-4">
               {/* Patient selector */}
               <div className="form-group mb-0">
-                <label className="form-label flex justify-between">
+                <label className="form-label flex items-center justify-between">
                   <span className="flex items-center gap-1">
                     Paciente
                     <TooltipAyuda
                       posicion="right"
-                      texto="Seleccione el paciente que se evaluará en esta sesión. Use '+ Nuevo' para crear un perfil si el paciente no está registrado en el sistema."
+                      texto="Seleccione el paciente que se evaluará en esta sesión o registre un nuevo perfil clínico."
                     />
                   </span>
-                  <button onClick={() => setShowAddPatient(!showAddPatient)} className="text-xs text-indigo-400 hover:text-indigo-300 font-bold">
-                    {showAddPatient ? 'Elegir Existente' : '+ Nuevo'}
-                  </button>
                 </label>
-                {showAddPatient ? (
-                  <form onSubmit={handleCreatePatient} className="flex gap-2 mt-1">
-                    <input type="text" value={newPatientName} onChange={e => setNewPatientName(e.target.value)}
-                      placeholder="Nombre del paciente..." className="input-text py-1 text-xs" required />
-                    <button type="submit" className="btn btn-primary text-xs py-1 px-3">Crear</button>
-                  </form>
-                ) : (
+                <div className="flex gap-2">
                   <select value={selectedPatientId} onChange={e => setSelectedPatientId(e.target.value)}
-                    className="input-text text-zinc-300 py-1.5" disabled={isRecording}>
+                    className="input-text text-zinc-300 py-1.5 flex-1" disabled={isRecording}>
                     {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
-                )}
+                  <button type="button" onClick={() => setIsPatientModalOpen(true)}
+                    disabled={isRecording}
+                    className="btn btn-secondary px-3 py-1.5 text-xs font-bold whitespace-nowrap">
+                    + Registrar
+                  </button>
+                </div>
               </div>
 
               {/* L-DOPA status */}
@@ -866,6 +901,29 @@ export function CaptureView() {
           )}
         </div>
       </div>
+      {/* Modal Overlay for Patient Registration */}
+      {isPatientModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button onClick={() => setIsPatientModalOpen(false)} className="modal-close" aria-label="Cerrar modal">✕</button>
+            <h3 className="modal-title flex items-center gap-2">
+              <User size={18} style={{ color: 'var(--success)' }} />
+              Registrar Nuevo Paciente
+            </h3>
+            <form onSubmit={handleCreatePatient} className="flex flex-col gap-4 mt-2">
+              <div className="form-group">
+                <label className="form-label">Nombre Completo del Paciente</label>
+                <input type="text" value={newPatientName} onChange={e => setNewPatientName(e.target.value)}
+                  placeholder="Ej. Carmen Rodriguez" className="input-text" required autoFocus />
+              </div>
+              <div className="flex gap-2 justify-end mt-2">
+                <button type="button" onClick={() => setIsPatientModalOpen(false)} className="btn btn-secondary text-xs">Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs">Crear Perfil</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
