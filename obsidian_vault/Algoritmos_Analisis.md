@@ -14,6 +14,9 @@ Ubicación del archivo: [angles.ts](file:///c:/Users/arrai/OneDrive/Documentos/P
     *   `NARIZ`: Movilidad del labio superior y nariz.
 *   **Fórmula del Ángulo:** Calcula en grados el ángulo entre tres puntos $P_1$, $P_2$ (vértice) y $P_3$, aplicando el producto punto de vectores:
     $$\theta = \arccos\left(\frac{\vec{v}_1 \cdot \vec{v}_2}{\|\vec{v}_1\| \|\vec{v}_2\|}\right) \times \frac{180}{\pi}$$
+*   **`encontrarLandmarkMasCercano(clickX, clickY, landmarks, canvasW, canvasH, umbral?)`:** Implementa el hit-test del Enfoque C de KAN-9. Itera sobre los 468 landmarks, calcula la distancia euclidiana al click (corregido por el espejo CSS `scale-x-[-1]`) y devuelve el índice del punto más cercano dentro del umbral de 15px. Retorna `null` si ningún landmark queda dentro del umbral.
+*   **`calcularCalidadTracking(landmarks, indices)`:** KAN-10 M5. Promedia los scores de `visibility` de los landmarks activos y clasifica: `excelente` (≥ 0.80), `degradado` (≥ 0.50) o `perdido` (< 0.50).
+*   **Tipo `LandmarkRaw`:** Interface tipada que espeja la salida de MediaPipe (`x, y, z?, visibility?`) para habilitar el filtro de visibilidad M2.
 
 ---
 

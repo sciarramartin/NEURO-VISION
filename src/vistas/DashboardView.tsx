@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/contexto_global/AppContext';
 import { Session } from '@/biblioteca/types/database';
+import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
 import { 
   Users, Activity, Calendar, Play, FileText, Search, 
   Trash2, UserPlus, TrendingUp, AlertCircle, Info, ChevronRight 
@@ -330,7 +331,13 @@ export function DashboardView() {
                 <Users size={24} />
               </div>
               <div>
-                <span className="text-xs text-zinc-500 block">PACIENTES ACTIVOS</span>
+                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  PACIENTES ACTIVOS
+                  <TooltipAyuda
+                    posicion="bottom"
+                    texto="Número total de pacientes registrados en el sistema con al menos una sesión de evaluación."
+                  />
+                </span>
                 <span className="text-xl font-bold font-mono text-zinc-200">{patients.length}</span>
               </div>
             </div>
@@ -340,7 +347,13 @@ export function DashboardView() {
                 <Activity size={24} />
               </div>
               <div>
-                <span className="text-xs text-zinc-500 block">SESIONES EVALUADAS</span>
+                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  SESIONES EVALUADAS
+                  <TooltipAyuda
+                    posicion="bottom"
+                    texto="Suma total de grabaciones realizadas. Cada sesión corresponde a una medición de región/lado en condición PRE o POST L-Dopa."
+                  />
+                </span>
                 <span className="text-xl font-bold font-mono text-zinc-200">
                   {patients.reduce((sum, p) => sum + p.sessions_count, 0)}
                 </span>
@@ -418,8 +431,24 @@ export function DashboardView() {
                     <tr>
                       <th>Paciente</th>
                       <th>Fecha Nac.</th>
-                      <th>Grabaciones</th>
-                      <th className="text-right">Acciones</th>
+                      <th>
+                        <span className="flex items-center gap-1">
+                          Grabaciones
+                          <TooltipAyuda
+                            posicion="top"
+                            texto="Número de sesiones de evaluación registradas para este paciente. Haga click en 'Análisis' para ver la evolución temporal."
+                          />
+                        </span>
+                      </th>
+                      <th className="text-right">
+                        <span className="flex items-center justify-end gap-1">
+                          Acciones
+                          <TooltipAyuda
+                            posicion="top"
+                            texto="Análisis: ver gráficos de tendencias y comparativas PRE/POST. Captura: iniciar una nueva sesión de grabación para este paciente."
+                          />
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -427,8 +456,18 @@ export function DashboardView() {
                       filteredPatients.map(p => (
                         <tr key={p.id}>
                           <td className="font-semibold text-zinc-200">{p.name}</td>
-                          <td className="font-mono text-zinc-400 text-xs">{p.birth_date}</td>
-                          <td className="font-mono text-zinc-400 text-xs">{p.sessions_count}</td>
+                          <td className="font-mono text-zinc-400 text-xs">{p.birth_date ?? '—'}</td>
+                          <td>
+                            {p.sessions_count > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-950/30 border border-indigo-900/30 text-indigo-400 rounded text-xs font-mono font-semibold">
+                                {p.sessions_count} sesion{p.sessions_count !== 1 ? 'es' : ''}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-950/20 border border-amber-900/20 text-amber-600 rounded text-[10px] font-semibold">
+                                Sin sesiones
+                              </span>
+                            )}
+                          </td>
                           <td className="text-right">
                             <div className="flex justify-end gap-2">
                               <Link 
@@ -461,18 +500,33 @@ export function DashboardView() {
 
             {/* Recent Sessions list (1 Column) */}
             <div className="lg:col-span-1 flex flex-col gap-4">
-              <h3 className="text-md font-bold px-1">Registros Recientes</h3>
+              <h3 className="flex items-center gap-1 text-md font-bold px-1">
+                Registros Recientes
+                <TooltipAyuda
+                  posicion="top"
+                  texto="Últimas 5 sesiones registradas en el sistema. Haga click en el icono de papelera para eliminar un registro (se puede deshacer en 5 segundos)."
+                />
+              </h3>
               
               <div className="flex flex-col gap-4">
                 {recentSessions.length > 0 ? (
                   recentSessions.map(session => {
                     const patient = patients.find(p => p.id === session.patient_id);
                     return (
-                      <div key={session.id} className="card p-4 flex justify-between items-start gap-4">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
-                            {session.modo} - {session.region} {session.lado}
-                          </span>
+                      <div key={session.id} className="card p-4 flex justify-between items-start gap-4 hover:border-zinc-700/40 transition-colors">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                              session.modo === 'PRE'
+                                ? 'bg-amber-950/30 border-amber-900/30 text-amber-400'
+                                : 'bg-emerald-950/30 border-emerald-900/30 text-emerald-400'
+                            }`}>
+                              {session.modo}
+                            </span>
+                            <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                              {session.region} • {session.lado}
+                            </span>
+                          </div>
                           <span className="text-sm font-semibold text-zinc-200">
                             {patient ? patient.name : 'Paciente'}
                           </span>
@@ -482,9 +536,11 @@ export function DashboardView() {
                         </div>
                         <button
                           onClick={() => handleDeleteSession(session)}
-                          className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
+                          className="text-zinc-600 hover:text-red-400 p-1.5 rounded hover:bg-red-950/20 transition-all"
+                          aria-label={`Eliminar sesión ${session.region} ${session.modo}`}
+                          title="Eliminar sesión (se puede deshacer)"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     );

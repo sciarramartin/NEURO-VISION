@@ -1,14 +1,42 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { calcularAngulo, PUNTOS_MEDICION, RegionKey, LadoKey, Point } from '@/biblioteca/math/angles';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  calcularAngulo,
+  encontrarLandmarkMasCercano,
+  calcularCalidadTracking,
+  PUNTOS_MEDICION,
+  RegionKey,
+  LadoKey,
+  LandmarkRaw,
+  CalidadTracking,
+  Point
+} from '@/biblioteca/math/angles';
+
+// Minimum visibility score for a landmark to be trusted (KAN-10 / M2)
+const UMBRAL_VISIBILIDAD = 0.65;
+
+// Colors for Enfoque C custom landmark selection slots
+const COLORES_SLOT: Record<number, string> = {
+  0: '#22d3ee', // cyan  — P1
+  1: '#facc15', // yellow — Vértice (P2)
+  2: '#e879f9'  // magenta — P3
+};
 
 interface WebcamCaptureProps {
   region: RegionKey;
   lado: LadoKey;
   isRecording: boolean;
   isMockMode: boolean;
+  /** Enfoque C: 3 custom landmark indices [P1, Vértice, P3] or null for defaults */
+  landmarksPersonalizados: [number, number, number] | null;
+  /** Enfoque C: when true the canvas is in landmark-selection mode */
+  modoSeleccionActivo: boolean;
   onDataCollected: (data: { tiempo: number; angulo: number }[]) => void;
+  /** KAN-10 / M5: called every ~1s with current tracking quality */
+  onTrackingQuality?: (quality: CalidadTracking) => void;
+  /** Enfoque C: called when user clicks a landmark in selection mode */
+  onLandmarkClick?: (index: number) => void;
 }
 
 export default function WebcamCapture({
@@ -16,7 +44,11 @@ export default function WebcamCapture({
   lado,
   isRecording,
   isMockMode,
-  onDataCollected
+  landmarksPersonalizados,
+  modoSeleccionActivo,
+  onDataCollected,
+  onTrackingQuality,
+  onLandmarkClick
 }: WebcamCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const liveCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,18 +57,22 @@ export default function WebcamCapture({
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [fps, setFps] = useState(0);
+  // Index of the landmark nearest to the cursor in selection mode (-1 = none)
+  const [hoveredLandmark, setHoveredLandmark] = useState<number>(-1);
 
-  // References to prevent infinite re-renders
+  // Stable refs — avoid re-triggering effects
   const recordingDataRef = useRef<{ tiempo: number; angulo: number }[]>([]);
   const startTimeRef = useRef<number | null>(null);
   const activeStreamRef = useRef<MediaStream | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
-  
+  const latestLandmarksRef = useRef<LandmarkRaw[]>([]);
+  const qualityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const filesetResolverRef = useRef<any>(null);
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
 
-  // Reset recording data when recording starts/stops
+  // ─── Recording lifecycle ───────────────────────────────────────────────────
   useEffect(() => {
     if (isRecording) {
       recordingDataRef.current = [];
@@ -48,14 +84,32 @@ export default function WebcamCapture({
     }
   }, [isRecording]);
 
-  // Clean up streams and animations on unmount
+  // ─── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       stopStreams();
+      if (qualityTimerRef.current) clearInterval(qualityTimerRef.current);
     };
   }, []);
 
-  // Initialize MediaPipe models dynamically based on selected region
+  // ─── KAN-10 / M5: quality polling ─────────────────────────────────────────
+  useEffect(() => {
+    if (!onTrackingQuality) return;
+    if (qualityTimerRef.current) clearInterval(qualityTimerRef.current);
+
+    qualityTimerRef.current = setInterval(() => {
+      if (isMockMode || latestLandmarksRef.current.length === 0) return;
+      const activeIndices = getActiveIndices();
+      const quality = calcularCalidadTracking(latestLandmarksRef.current, activeIndices);
+      onTrackingQuality(quality);
+    }, 1000);
+
+    return () => {
+      if (qualityTimerRef.current) clearInterval(qualityTimerRef.current);
+    };
+  }, [region, lado, landmarksPersonalizados, isMockMode, onTrackingQuality]);
+
+  // ─── MediaPipe initialization ──────────────────────────────────────────────
   useEffect(() => {
     let active = true;
 
@@ -71,9 +125,8 @@ export default function WebcamCapture({
         setLoading(true);
         setErrorMsg(null);
 
-        // Dynamic import to avoid Next.js SSR build errors
         const vision = await import('@mediapipe/tasks-vision');
-        
+
         if (!filesetResolverRef.current) {
           filesetResolverRef.current = await vision.FilesetResolver.forVisionTasks(
             'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm'
@@ -107,8 +160,7 @@ export default function WebcamCapture({
 
         if (!active) return;
         setLoading(false);
-        
-        // Start WebCam if not active
+
         if (!activeStreamRef.current) {
           await startWebcam();
         }
@@ -122,11 +174,14 @@ export default function WebcamCapture({
     }
 
     initMediaPipe();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [region, isMockMode]);
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  const getActiveIndices = (): number[] => {
+    if (landmarksPersonalizados) return [...landmarksPersonalizados];
+    return [...(PUNTOS_MEDICION[region][lado] as unknown as number[])];
+  };
 
   const startWebcam = async () => {
     try {
@@ -135,7 +190,6 @@ export default function WebcamCapture({
         video: { width: 640, height: 480, frameRate: { ideal: 30 } },
         audio: false
       });
-      
       activeStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -158,13 +212,160 @@ export default function WebcamCapture({
     }
   };
 
-  // Processing loop
+  // ─── Canvas interaction (Enfoque C) ───────────────────────────────────────
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!modoSeleccionActivo || isMockMode || latestLandmarksRef.current.length === 0) return;
+    const canvas = liveCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const rawX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const rawY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    // Compensate for CSS scale-x-[-1] mirror
+    const mirroredX = canvas.width - rawX;
+
+    const idx = encontrarLandmarkMasCercano(
+      mirroredX, rawY,
+      latestLandmarksRef.current,
+      canvas.width, canvas.height,
+      18
+    );
+    setHoveredLandmark(idx ?? -1);
+  }, [modoSeleccionActivo, isMockMode]);
+
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!modoSeleccionActivo || isMockMode || latestLandmarksRef.current.length === 0) return;
+    const canvas = liveCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const rawX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const rawY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const mirroredX = canvas.width - rawX;
+
+    const idx = encontrarLandmarkMasCercano(
+      mirroredX, rawY,
+      latestLandmarksRef.current,
+      canvas.width, canvas.height,
+      18
+    );
+    if (idx !== null && onLandmarkClick) {
+      onLandmarkClick(idx);
+    }
+  }, [modoSeleccionActivo, isMockMode, onLandmarkClick]);
+
+  // ─── Drawing helpers ───────────────────────────────────────────────────────
+  const drawAngleOverlays = (
+    ctxLive: CanvasRenderingContext2D,
+    ctxMesh: CanvasRenderingContext2D,
+    pts: Point[],
+    isCustom: boolean
+  ) => {
+    const lineColor = isCustom ? '#f59e0b' : '#10b981'; // gold vs emerald
+
+    [ctxLive, ctxMesh].forEach(ctx => {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.lineTo(pts[2].x, pts[2].y);
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+
+      // Vertex glow (P2)
+      ctx.beginPath();
+      ctx.arc(pts[1].x, pts[1].y, 8, 0, 2 * Math.PI);
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.35;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Slot-colored dots
+      pts.forEach((p, i) => {
+        const slotColor = isCustom ? COLORES_SLOT[i] : '#f4f4f5';
+        ctx.fillStyle = slotColor;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        if (isCustom) {
+          ctx.fillStyle = slotColor;
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText(`P${i + 1}`, p.x + 7, p.y - 4);
+        }
+      });
+    });
+  };
+
+  const drawHoverHighlight = (
+    ctx: CanvasRenderingContext2D,
+    landmarks: LandmarkRaw[],
+    hoveredIdx: number,
+    canvasW: number,
+    canvasH: number
+  ) => {
+    if (hoveredIdx < 0 || !landmarks[hoveredIdx]) return;
+    const lm = landmarks[hoveredIdx];
+    const px = lm.x * canvasW;
+    const py = lm.y * canvasH;
+
+    ctx.save();
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.arc(px, py, 10, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText(`#${hoveredIdx}`, px + 12, py + 4);
+    ctx.restore();
+  };
+
+  // ─── Selection mode: draw all landmarks larger with slot colors ───────────
+  const drawSelectionModeLandmarks = (
+    ctx: CanvasRenderingContext2D,
+    landmarks: LandmarkRaw[],
+    customIndices: [number, number, number] | null,
+    canvasW: number,
+    canvasH: number
+  ) => {
+    ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
+    landmarks.forEach(lm => {
+      const px = lm.x * canvasW;
+      const py = lm.y * canvasH;
+      ctx.beginPath();
+      ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
+      ctx.fill();
+    });
+
+    // Highlight already-selected custom points
+    if (customIndices) {
+      customIndices.forEach((idx, slot) => {
+        if (idx < 0 || !landmarks[idx]) return;
+        const lm = landmarks[idx];
+        const px = lm.x * canvasW;
+        const py = lm.y * canvasH;
+        ctx.fillStyle = COLORES_SLOT[slot];
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(`P${slot + 1}`, px - 5, py + 4);
+      });
+    }
+  };
+
+  // ─── Main render loop ──────────────────────────────────────────────────────
   useEffect(() => {
     let lastTime = performance.now();
     let frameCount = 0;
 
     const renderLoop = () => {
-      // Calculate FPS
       const now = performance.now();
       frameCount++;
       if (now - lastTime >= 1000) {
@@ -190,89 +391,97 @@ export default function WebcamCapture({
         return;
       }
 
-      // Clear canvases
       ctxLive.clearRect(0, 0, liveCanvas.width, liveCanvas.height);
       ctxMesh.fillStyle = '#09090b';
       ctxMesh.fillRect(0, 0, meshCanvas.width, meshCanvas.height);
 
       const regionType = PUNTOS_MEDICION[region].tipo;
+      const isCustom = !!landmarksPersonalizados;
+      const activeIndices = getActiveIndices();
 
       if (isMockMode) {
-        // Draw Simulated Data
         drawMockLandmarks(ctxLive, ctxMesh, liveCanvas.width, liveCanvas.height, now);
       } else if (video && video.readyState >= 2) {
-        // Draw Video Frame
         ctxLive.drawImage(video, 0, 0, liveCanvas.width, liveCanvas.height);
 
         if (regionType === 'rostro' && faceLandmarkerRef.current) {
           const results = faceLandmarkerRef.current.detectForVideo(video, now);
-          if (results && results.faceLandmarks && results.faceLandmarks.length > 0) {
-            const landmarks = results.faceLandmarks[0];
-            
-            // Draw face mesh
-            ctxLive.fillStyle = 'rgba(235, 137, 52, 0.3)';
-            ctxMesh.fillStyle = '#6366f1';
-            
-            landmarks.forEach((lm: any) => {
-              const x = lm.x * liveCanvas.width;
-              const y = lm.y * liveCanvas.height;
-              
-              ctxLive.beginPath();
-              ctxLive.arc(x, y, 1, 0, 2 * Math.PI);
-              ctxLive.fill();
-              
-              ctxMesh.beginPath();
-              ctxMesh.arc(x, y, 1, 0, 2 * Math.PI);
-              ctxMesh.fill();
-            });
+          if (results?.faceLandmarks?.length > 0) {
+            const landmarks: LandmarkRaw[] = results.faceLandmarks[0];
+            latestLandmarksRef.current = landmarks;
 
-            // Draw Selected Region Angle & Lines
-            const indices = PUNTOS_MEDICION[region][lado] as unknown as number[];
-            const pts = indices.map(idx => ({
-              x: landmarks[idx].x * liveCanvas.width,
-              y: landmarks[idx].y * liveCanvas.height
-            }));
+            if (modoSeleccionActivo) {
+              // ── Selection mode: show all landmarks enlarged ──
+              drawSelectionModeLandmarks(ctxLive, landmarks, landmarksPersonalizados, liveCanvas.width, liveCanvas.height);
+              drawSelectionModeLandmarks(ctxMesh, landmarks, landmarksPersonalizados, meshCanvas.width, meshCanvas.height);
+              drawHoverHighlight(ctxLive, landmarks, hoveredLandmark, liveCanvas.width, liveCanvas.height);
 
-            if (pts.length === 3) {
-              drawAngleOverlays(ctxLive, ctxMesh, pts);
-              
-              const currentAngle = calcularAngulo(pts[0], pts[1], pts[2]);
+            } else {
+              // ── Normal mode: draw the full mesh lightly ──
+              ctxLive.fillStyle = 'rgba(235, 137, 52, 0.3)';
+              ctxMesh.fillStyle = '#6366f1';
 
-              if (isRecording && startTimeRef.current !== null) {
-                const elapsed = (performance.now() - startTimeRef.current) / 1000;
-                recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
+              landmarks.forEach(lm => {
+                const x = lm.x * liveCanvas.width;
+                const y = lm.y * liveCanvas.height;
+                ctxLive.beginPath();
+                ctxLive.arc(x, y, 1, 0, 2 * Math.PI);
+                ctxLive.fill();
+                ctxMesh.beginPath();
+                ctxMesh.arc(x, y, 1, 0, 2 * Math.PI);
+                ctxMesh.fill();
+              });
+
+              // ── KAN-10 M2: visibility filter ──
+              const visibilityOk = activeIndices.every(idx => {
+                const lm = landmarks[idx];
+                return lm && (lm.visibility === undefined || lm.visibility >= UMBRAL_VISIBILIDAD);
+              });
+
+              if (visibilityOk) {
+                const pts = activeIndices.map(idx => ({
+                  x: landmarks[idx].x * liveCanvas.width,
+                  y: landmarks[idx].y * liveCanvas.height
+                }));
+
+                if (pts.length === 3) {
+                  drawAngleOverlays(ctxLive, ctxMesh, pts, isCustom);
+                  const currentAngle = calcularAngulo(pts[0], pts[1], pts[2]);
+
+                  if (isRecording && startTimeRef.current !== null) {
+                    const elapsed = (performance.now() - startTimeRef.current) / 1000;
+                    recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
+                  }
+                }
               }
             }
           }
         } else if (regionType === 'cuerpo' && poseLandmarkerRef.current) {
           const results = poseLandmarkerRef.current.detectForVideo(video, now);
-          if (results && results.landmarks && results.landmarks.length > 0) {
-            const landmarks = results.landmarks[0];
-            
-            // Draw skeleton nodes
+          if (results?.landmarks?.length > 0) {
+            const landmarks: LandmarkRaw[] = results.landmarks[0];
+            latestLandmarksRef.current = landmarks;
+
             ctxLive.fillStyle = 'rgba(235, 137, 52, 0.4)';
             ctxMesh.fillStyle = '#6366f1';
-            
-            landmarks.forEach((lm: any) => {
+
+            landmarks.forEach(lm => {
               const x = lm.x * liveCanvas.width;
               const y = lm.y * liveCanvas.height;
-              
               ctxLive.beginPath();
               ctxLive.arc(x, y, 2.5, 0, 2 * Math.PI);
               ctxLive.fill();
-              
               ctxMesh.beginPath();
               ctxMesh.arc(x, y, 2.5, 0, 2 * Math.PI);
               ctxMesh.fill();
             });
 
-            // Draw skeleton lines
+            // Skeleton lines
             const poseConnections = [
-              [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], // shoulders and arms
-              [11, 23], [12, 24], [23, 24], // torso
-              [15, 19], [16, 20] // hand connectors
+              [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+              [11, 23], [12, 24], [23, 24],
+              [15, 19], [16, 20]
             ];
-            
             [ctxLive, ctxMesh].forEach(ctx => {
               ctx.strokeStyle = 'rgba(99, 102, 241, 0.25)';
               ctx.lineWidth = 1.5;
@@ -286,25 +495,30 @@ export default function WebcamCapture({
               });
             });
 
-            // Calculate active measurement angle
-            const indices = PUNTOS_MEDICION[region][lado] as unknown as number[];
-            const pts = indices.map(idx => {
-              if (!landmarks[idx]) return null;
-              return {
-                x: landmarks[idx].x * liveCanvas.width,
-                y: landmarks[idx].y * liveCanvas.height
-              };
+            // KAN-10 M2: visibility filter
+            const visibilityOk = activeIndices.every(idx => {
+              const lm = landmarks[idx];
+              return lm && (lm.visibility === undefined || lm.visibility >= UMBRAL_VISIBILIDAD);
             });
 
-            if (pts.every(p => p !== null)) {
-              const nonNullPts = pts as Point[];
-              drawAngleOverlays(ctxLive, ctxMesh, nonNullPts);
-              
-              const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
+            if (visibilityOk) {
+              const pts = activeIndices.map(idx => {
+                if (!landmarks[idx]) return null;
+                return {
+                  x: landmarks[idx].x * liveCanvas.width,
+                  y: landmarks[idx].y * liveCanvas.height
+                };
+              });
 
-              if (isRecording && startTimeRef.current !== null) {
-                const elapsed = (performance.now() - startTimeRef.current) / 1000;
-                recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
+              if (pts.every(p => p !== null)) {
+                const nonNullPts = pts as Point[];
+                drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
+                const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
+
+                if (isRecording && startTimeRef.current !== null) {
+                  const elapsed = (performance.now() - startTimeRef.current) / 1000;
+                  recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
+                }
               }
             }
           }
@@ -316,36 +530,11 @@ export default function WebcamCapture({
 
     animFrameIdRef.current = requestAnimationFrame(renderLoop);
     return () => {
-      if (animFrameIdRef.current) {
-        cancelAnimationFrame(animFrameIdRef.current);
-      }
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
     };
-  }, [region, lado, isRecording, isMockMode]);
+  }, [region, lado, isRecording, isMockMode, landmarksPersonalizados, modoSeleccionActivo, hoveredLandmark]);
 
-  const drawAngleOverlays = (
-    ctxLive: CanvasRenderingContext2D,
-    ctxMesh: CanvasRenderingContext2D,
-    pts: Point[]
-  ) => {
-    [ctxLive, ctxMesh].forEach(ctx => {
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      ctx.lineTo(pts[1].x, pts[1].y);
-      ctx.lineTo(pts[2].x, pts[2].y);
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 3.5;
-      ctx.stroke();
-
-      // Draw active indicator dots
-      ctx.fillStyle = '#f4f4f5';
-      pts.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
-        ctx.fill();
-      });
-    });
-  };
-
+  // ─── Mock mode rendering ───────────────────────────────────────────────────
   const drawMockLandmarks = (
     ctxLive: CanvasRenderingContext2D,
     ctxMesh: CanvasRenderingContext2D,
@@ -356,10 +545,8 @@ export default function WebcamCapture({
     const regionType = PUNTOS_MEDICION[region].tipo;
 
     if (regionType === 'rostro') {
-      // Draw Face Mockup
       ctxLive.fillStyle = '#18181b';
       ctxLive.fillRect(0, 0, width, height);
-
       ctxLive.strokeStyle = '#27272a';
       ctxLive.lineWidth = 2;
       ctxLive.beginPath();
@@ -367,10 +554,10 @@ export default function WebcamCapture({
       ctxLive.stroke();
 
       const t = timestamp / 1000;
-      const baseFreq = 5.2; // 5.2Hz simulated Parkinsonian tremor
+      const baseFreq = 5.2;
       const tremor = Math.sin(t * baseFreq * 2 * Math.PI) * 1.5;
       const slowMove = Math.sin(t * 0.5 * 2 * Math.PI) * 10;
-      
+
       let simulatedAngle = 0;
       if (region === 'BOCA') {
         simulatedAngle = 120 + slowMove + tremor;
@@ -425,22 +612,22 @@ export default function WebcamCapture({
         }
       });
 
-      drawAngleOverlays(ctxLive, ctxMesh, pts);
+      drawAngleOverlays(ctxLive, ctxMesh, pts, !!landmarksPersonalizados);
 
       if (isRecording && startTimeRef.current !== null) {
         const elapsed = (performance.now() - startTimeRef.current) / 1000;
         recordingDataRef.current.push({ tiempo: elapsed, angulo: simulatedAngle });
       }
     } else {
-      // Draw Body Mockup (Upper skeletal pose)
+      // Body mock
       ctxLive.fillStyle = '#18181b';
       ctxLive.fillRect(0, 0, width, height);
 
       const t = timestamp / 1000;
-      const baseFreq = 5.2; // 5.2Hz Parkinsonian tremor
+      const baseFreq = 5.2;
       const tremor = Math.sin(t * baseFreq * 2 * Math.PI) * 1.8;
       const slowMove = Math.sin(t * 0.4 * 2 * Math.PI) * 15;
-      
+
       let simulatedAngle = 0;
       if (region === 'CODO') {
         simulatedAngle = 90 + slowMove + tremor;
@@ -455,10 +642,8 @@ export default function WebcamCapture({
 
       const head = { x: cx, y: cy - 70 };
       const neck = { x: cx, y: cy - 40 };
-      
       const leftShoulder = { x: cx - 60, y: cy - 30 };
       const rightShoulder = { x: cx + 60, y: cy - 30 };
-      
       const leftHip = { x: cx - 40, y: cy + 90 };
       const rightHip = { x: cx + 40, y: cy + 90 };
 
@@ -470,36 +655,18 @@ export default function WebcamCapture({
       if (region === 'CODO') {
         const angleRad = (simulatedAngle * Math.PI) / 180;
         if (lado === 'IZQUIERDA') {
-          lElbow = {
-            x: leftShoulder.x - Math.cos(angleRad - 0.5) * 60,
-            y: leftShoulder.y + Math.sin(angleRad - 0.5) * 60
-          };
-          lWrist = {
-            x: lElbow.x - Math.cos(angleRad + 0.2) * 50,
-            y: lElbow.y + Math.sin(angleRad + 0.2) * 50
-          };
+          lElbow = { x: leftShoulder.x - Math.cos(angleRad - 0.5) * 60, y: leftShoulder.y + Math.sin(angleRad - 0.5) * 60 };
+          lWrist = { x: lElbow.x - Math.cos(angleRad + 0.2) * 50, y: lElbow.y + Math.sin(angleRad + 0.2) * 50 };
         } else {
-          rElbow = {
-            x: rightShoulder.x + Math.cos(angleRad - 0.5) * 60,
-            y: rightShoulder.y + Math.sin(angleRad - 0.5) * 60
-          };
-          rWrist = {
-            x: rElbow.x + Math.cos(angleRad + 0.2) * 50,
-            y: rElbow.y + Math.sin(angleRad + 0.2) * 50
-          };
+          rElbow = { x: rightShoulder.x + Math.cos(angleRad - 0.5) * 60, y: rightShoulder.y + Math.sin(angleRad - 0.5) * 60 };
+          rWrist = { x: rElbow.x + Math.cos(angleRad + 0.2) * 50, y: rElbow.y + Math.sin(angleRad + 0.2) * 50 };
         }
       } else if (region === 'MUÑECA') {
         const angleRad = (simulatedAngle * Math.PI) / 180;
         if (lado === 'IZQUIERDA') {
-          lWrist = {
-            x: lElbow.x - 40,
-            y: lElbow.y + Math.sin(angleRad) * 40
-          };
+          lWrist = { x: lElbow.x - 40, y: lElbow.y + Math.sin(angleRad) * 40 };
         } else {
-          rWrist = {
-            x: rElbow.x + 40,
-            y: rElbow.y + Math.sin(angleRad) * 40
-          };
+          rWrist = { x: rElbow.x + 40, y: rElbow.y + Math.sin(angleRad) * 40 };
         }
       } else if (region === 'HOMBRO') {
         const tilt = (simulatedAngle * Math.PI) / 180;
@@ -510,32 +677,26 @@ export default function WebcamCapture({
       [ctxLive, ctxMesh].forEach(ctx => {
         ctx.strokeStyle = 'rgba(99, 102, 241, 0.25)';
         ctx.lineWidth = 2.5;
-        
         ctx.beginPath();
         ctx.arc(head.x, head.y, 18, 0, 2 * Math.PI);
         ctx.stroke();
-
         ctx.beginPath();
         ctx.moveTo(neck.x, neck.y);
         ctx.lineTo(cx, cy + 90);
         ctx.stroke();
-
         ctx.beginPath();
         ctx.moveTo(leftShoulder.x, leftShoulder.y);
         ctx.lineTo(rightShoulder.x, rightShoulder.y);
         ctx.stroke();
-
         ctx.beginPath();
         ctx.moveTo(leftHip.x, leftHip.y);
         ctx.lineTo(rightHip.x, rightHip.y);
         ctx.stroke();
-
         ctx.beginPath();
         ctx.moveTo(leftShoulder.x, leftShoulder.y);
         ctx.lineTo(lElbow.x, lElbow.y);
         ctx.lineTo(lWrist.x, lWrist.y);
         ctx.stroke();
-
         ctx.beginPath();
         ctx.moveTo(rightShoulder.x, rightShoulder.y);
         ctx.lineTo(rElbow.x, rElbow.y);
@@ -552,22 +713,16 @@ export default function WebcamCapture({
 
       let pts: Point[] = [];
       if (region === 'CODO') {
-        pts = lado === 'IZQUIERDA' 
-          ? [leftShoulder, lElbow, lWrist] 
-          : [rightShoulder, rElbow, rWrist];
+        pts = lado === 'IZQUIERDA' ? [leftShoulder, lElbow, lWrist] : [rightShoulder, rElbow, rWrist];
       } else if (region === 'MUÑECA') {
         const lHandTip = { x: lWrist.x - 15, y: lWrist.y + 10 };
         const rHandTip = { x: rWrist.x + 15, y: rWrist.y + 10 };
-        pts = lado === 'IZQUIERDA' 
-          ? [lElbow, lWrist, lHandTip] 
-          : [rElbow, rWrist, rHandTip];
+        pts = lado === 'IZQUIERDA' ? [lElbow, lWrist, lHandTip] : [rElbow, rWrist, rHandTip];
       } else if (region === 'HOMBRO') {
-        pts = lado === 'IZQUIERDA'
-          ? [rightShoulder, leftShoulder, leftHip]
-          : [leftShoulder, rightShoulder, rightHip];
+        pts = lado === 'IZQUIERDA' ? [rightShoulder, leftShoulder, leftHip] : [leftShoulder, rightShoulder, rightHip];
       }
 
-      drawAngleOverlays(ctxLive, ctxMesh, pts);
+      drawAngleOverlays(ctxLive, ctxMesh, pts, !!landmarksPersonalizados);
 
       if (isRecording && startTimeRef.current !== null) {
         const elapsed = (performance.now() - startTimeRef.current) / 1000;
@@ -576,6 +731,7 @@ export default function WebcamCapture({
     }
   };
 
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-4">
       {loading && (
@@ -592,35 +748,42 @@ export default function WebcamCapture({
         </div>
       )}
 
-      <video
-        ref={videoRef}
-        className="hidden"
-        width="640"
-        height="480"
-        playsInline
-        muted
-      />
+      <video ref={videoRef} className="hidden" width="640" height="480" playsInline muted />
 
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
-          loading || errorMsg ? 'hidden' : ''
-        }`}
-      >
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${loading || errorMsg ? 'hidden' : ''}`}>
+        {/* Live Camera Canvas */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center px-1">
             <span className="text-xs font-semibold text-zinc-400">VISTA CÁMARA</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-800 rounded text-emerald-400">
-              FPS: {fps}
-            </span>
+            <div className="flex items-center gap-2">
+              {modoSeleccionActivo && !isMockMode && (
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-950/40 text-amber-400 border border-amber-800/40 rounded animate-pulse">
+                  ✦ MODO SELECCIÓN
+                </span>
+              )}
+              <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-800 rounded text-emerald-400">
+                FPS: {fps}
+              </span>
+            </div>
           </div>
-          <div className="aspect-[4/3] bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-inner relative">
+          <div
+            className={`aspect-[4/3] bg-zinc-900 border rounded-xl overflow-hidden shadow-inner relative ${
+              modoSeleccionActivo && !isMockMode
+                ? 'border-amber-700/60 ring-1 ring-amber-600/30'
+                : 'border-zinc-800'
+            }`}
+          >
             <canvas
               ref={liveCanvasRef}
               width="640"
               height="480"
-              className="w-full h-full object-cover scale-x-[-1]"
+              className={`w-full h-full object-cover scale-x-[-1] ${
+                modoSeleccionActivo && !isMockMode ? 'cursor-crosshair' : ''
+              }`}
+              onMouseMove={handleCanvasMouseMove}
+              onClick={handleCanvasClick}
             />
-            {/* Viewfinder corners and overlays */}
+            {/* Viewfinder corners */}
             <div className="viewfinder-overlay">
               <div className="absolute top-4 left-4 w-3.5 h-3.5 border-t-2 border-l-2 border-emerald-500/50" />
               <div className="absolute top-4 right-4 w-3.5 h-3.5 border-t-2 border-r-2 border-emerald-500/50" />
@@ -630,9 +793,16 @@ export default function WebcamCapture({
                 <div className="w-1 h-1 bg-emerald-500/30 rounded-full" />
               </div>
             </div>
+            {/* Selection mode tooltip */}
+            {modoSeleccionActivo && !isMockMode && hoveredLandmark >= 0 && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900/90 border border-amber-700/50 rounded px-2 py-1 text-[10px] font-mono text-amber-400">
+                Landmark #{hoveredLandmark} — click para seleccionar
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Mesh Canvas */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center px-1">
             <span className="text-xs font-semibold text-zinc-400">VISTA MALLA BIOMÉTRICA</span>
@@ -649,7 +819,6 @@ export default function WebcamCapture({
               height="480"
               className="w-full h-full object-cover scale-x-[-1]"
             />
-            {/* Viewfinder corners and overlays */}
             <div className="viewfinder-overlay">
               <div className="absolute top-4 left-4 w-3.5 h-3.5 border-t-2 border-l-2 border-indigo-500/50" />
               <div className="absolute top-4 right-4 w-3.5 h-3.5 border-t-2 border-r-2 border-indigo-500/50" />
