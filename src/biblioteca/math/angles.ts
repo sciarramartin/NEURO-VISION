@@ -52,6 +52,17 @@ export const PUNTOS_MEDICION = {
 
 export type RegionKey = keyof typeof PUNTOS_MEDICION;
 export type LadoKey = 'IZQUIERDA' | 'DERECHA';
+export type CalidadTracking = 'excelente' | 'degradado' | 'perdido';
+
+/**
+ * Typed landmark as returned by MediaPipe (normalized 0-1 coordinates).
+ */
+export interface LandmarkRaw {
+  x: number;
+  y: number;
+  z?: number;
+  visibility?: number;
+}
 
 /**
  * Calculates the angle (in degrees) between three points where p2 is the vertex.
@@ -71,4 +82,71 @@ export function calcularAngulo(p1: Point, p2: Point, p3: Point): number {
   const anguloRad = Math.acos(clippedCoseno);
 
   return (anguloRad * 180) / Math.PI;
+}
+
+/**
+ * Hit-test: finds the index of the nearest landmark to a canvas click.
+ * Returns null if no landmark is within `umbralPx` pixels.
+ *
+ * IMPORTANT: pass the mirrored clickX (canvasWidth - rawClickX) when the
+ * canvas is rendered with scale-x-[-1] (CSS mirror), so that the hit
+ * coordinates match the landmark's un-mirrored normalized space.
+ *
+ * @param clickX      - Canvas-space X after mirror correction
+ * @param clickY      - Canvas-space Y
+ * @param landmarks   - Array of normalized MediaPipe landmarks
+ * @param canvasWidth  - Canvas pixel width
+ * @param canvasHeight - Canvas pixel height
+ * @param umbralPx    - Maximum distance in pixels to consider a hit (default 15)
+ */
+export function encontrarLandmarkMasCercano(
+  clickX: number,
+  clickY: number,
+  landmarks: LandmarkRaw[],
+  canvasWidth: number,
+  canvasHeight: number,
+  umbralPx: number = 15
+): number | null {
+  let minDist = Infinity;
+  let candidato = -1;
+
+  landmarks.forEach((lm, idx) => {
+    const px = lm.x * canvasWidth;
+    const py = lm.y * canvasHeight;
+    const dist = Math.hypot(clickX - px, clickY - py);
+
+    if (dist < minDist && dist < umbralPx) {
+      minDist = dist;
+      candidato = idx;
+    }
+  });
+
+  return candidato >= 0 ? candidato : null;
+}
+
+/**
+ * Classifies the tracking quality based on the average visibility score
+ * of a set of landmark indices.
+ *
+ * - excelente: avg visibility >= 0.80
+ * - degradado:  avg visibility >= 0.50
+ * - perdido:    avg visibility <  0.50 or landmark missing
+ */
+export function calcularCalidadTracking(
+  landmarks: LandmarkRaw[],
+  indices: number[]
+): CalidadTracking {
+  if (!landmarks || landmarks.length === 0) return 'perdido';
+
+  const scores = indices
+    .map(i => landmarks[i]?.visibility ?? 0)
+    .filter(v => v !== undefined);
+
+  if (scores.length === 0) return 'perdido';
+
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+  if (avg >= 0.80) return 'excelente';
+  if (avg >= 0.50) return 'degradado';
+  return 'perdido';
 }

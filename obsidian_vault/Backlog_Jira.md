@@ -11,21 +11,24 @@ Cada historia de usuario ha sido enriquecida con especificaciones clínicas, det
 ### 🔥 1. Prioridad: Highest (Core e Infraestructura Facial)
 *Landmarks faciales y simetría bilateral (Core del sistema).*
 
-#### 📌 `KAN-9`: KAN-Story-1: Selección de Landmarks Faciales en UI
+#### 📌 `KAN-9`: KAN-Story-1: Selección de Landmarks Faciales en UI ✅ IMPLEMENTADO
 *   **Descripción:** Permitir al evaluador elegir qué regiones faciales específicas monitorear (Frente/Cejas, Ojos/Párpados, Labios/Boca, Nariz) mediante interruptores de selección en la pantalla de configuración.
 *   **Como:** evaluador clínico / neurólogo.
 *   **Quiero:** elegir qué regiones faciales específicas monitorear mediante la UI.
 *   **Para:** focalizar el análisis en los síntomas específicos del paciente y optimizar el rendimiento de procesamiento del sistema.
 *   **Especificaciones Técnicas:**
     *   *Vista:* [[Vistas_Usuario|CaptureView]] / Panel de configuración interactivo.
-    *   *Landmarks:* Ceja Izquierda (70, 107), Ceja Derecha (300, 336), Ojo Izquierdo (33, 133), Ojo Derecho (263, 362), Boca (61, 291, 0, 17), Nariz (4, 98, 327).
+    *   *Landmarks:* Ceja (70,63,105 / 336,296,334), Párpado (159,145,133 / 386,374,362), Boca (61,291,0 / 291,61,17), Nariz (198,420,437 / 420,198,168).
     *   *Estado:* Guardado en el [[Controladores_Negocio|contexto global]] para el filtrado en el bucle de renderizado.
+    *   *M1:* Botones visuales con íconos por región (reemplazan dropdown).
+    *   *Enfoque C:* Panel colapsable "Ajuste Fino de Landmarks" — modo click sobre canvas para asignar P1/Vértice/P3 manualmente. Hit-test en `encontrarLandmarkMasCercano()` en [[Algoritmos_Analisis|angles.ts]]. Overlay dorado cuando se usan puntos personalizados, esmeralda para defaults.
 *   **Criterios de Aceptación:**
     *   *Dado* que el clínico ingresa a la pantalla de preparación, *Cuando* activa únicamente "Ojos/Párpados" y "Labios/Boca", *Entonces* el canvas de visualización y el motor analítico solo renderizan y calculan coordenadas para esos grupos de puntos durante la sesión activa.
+    *   *Dado* que el evaluador activa el modo Ajuste Fino, *Cuando* hace click sobre 3 landmarks en el canvas, *Entonces* el sistema usa esos índices como P1/Vértice/P3 y muestra el overlay en color dorado.
 
 ---
 
-#### 📌 `KAN-10`: KAN-Story-2: Extracción de Landmarks en Tiempo Real
+#### 📌 `KAN-10`: KAN-Story-2: Extracción de Landmarks en Tiempo Real ✅ IMPLEMENTADO
 *   **Descripción:** Integrar la biblioteca MediaPipe Face Mesh para extraer las coordenadas espaciales tridimensionales $X, Y, Z$ de la malla facial en tiempo real a partir del feed de video.
 *   **Como:** motor de procesamiento de visión de Neuro Vision.
 *   **Quiero:** integrar MediaPipe Face Mesh para extraer las coordenadas tridimensionales de la cara del paciente en tiempo real.
@@ -33,9 +36,12 @@ Cada historia de usuario ha sido enriquecida con especificaciones clínicas, det
 *   **Especificaciones Técnicas:**
     *   *Código:* Hook de MediaPipe integrado con el componente Webcam en [[Vistas_Usuario|CaptureView]].
     *   *Rendimiento:* Procesamiento estable de frames a un mínimo de 30 FPS.
+    *   *M2 (Filtro de visibilidad):* Se omiten frames cuyo `landmark.visibility < 0.65` para evitar registrar datos de baja calidad clínica. Umbral configurado como constante `UMBRAL_VISIBILIDAD` en `WebcamCapture.tsx`.
+    *   *M5 (Indicador de calidad):* Badge en tiempo real sobre el canvas (🟢 Excelente / 🟡 Degradado / 🔴 Perdido) calculado cada 1s por `calcularCalidadTracking()` en [[Algoritmos_Analisis|angles.ts]].
     *   *Fallback:* Lógica de tolerancia a pérdidas temporales de tracking facial.
 *   **Criterios de Aceptación:**
     *   *Dado* que la cámara o el simulador están encendidos, *Cuando* el paciente se ubica frente a la cámara, *Entonces* la malla de MediaPipe Face Mesh se dibuja superpuesta sobre su rostro y extrae las coordenadas 3D sin latencias perceptibles.
+    *   *Dado* que el paciente gira la cabeza parcialmente, *Cuando* la visibilidad de los landmarks activos cae bajo 0.65, *Entonces* el sistema descarta ese frame del registro y muestra badge "Tracking Degradado".
 
 ---
 
