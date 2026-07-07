@@ -19,7 +19,13 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/vistas/*": ["./src/vistas/*"],
+      "@/controladores/*": ["./src/controladores/*"],
+      "@/modelos/*": ["./src/modelos/*"],
+      "@/componentes_visuales/*": ["./src/componentes_visuales/*"],
+      "@/biblioteca/*": ["./src/biblioteca/*"],
+      "@/contexto_global/*": ["./src/contexto_global/*"]
     }
   },
   "include": [

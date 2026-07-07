@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDB } from '@/lib/db';
+import { SessionController } from '@/controladores/SessionController';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +10,7 @@ export async function GET(request: Request) {
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam) : undefined;
 
-    const db = await getDB();
-    const sessions = await db.getSessions(patientId, limit);
+    const sessions = await SessionController.getSessions(patientId, limit);
     return NextResponse.json(sessions);
   } catch (err: any) {
     console.error('API Sessions GET error:', err);
@@ -22,15 +21,15 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const sessionData = await request.json();
-    if (!sessionData.patient_id) {
-      return NextResponse.json({ error: 'Patient ID is required' }, { status: 400 });
-    }
-
-    const db = await getDB();
-    const newSession = await db.createSession(sessionData);
+    const newSession = await SessionController.createSession(sessionData);
     return NextResponse.json(newSession);
   } catch (err: any) {
     console.error('API Sessions POST error:', err);
+    
+    if (err.message === 'Patient ID is required') {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
@@ -44,11 +43,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    const db = await getDB();
-    await db.deleteSession(id);
+    await SessionController.deleteSession(id);
     return NextResponse.json({ success: true, message: 'Session deleted successfully' });
   } catch (err: any) {
     console.error('API Sessions DELETE error:', err);
+    
+    if (err.message === 'Session ID is required') {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

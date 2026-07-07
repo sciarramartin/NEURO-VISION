@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getDB } from '@/lib/db';
+import { PatientController } from '@/controladores/PatientController';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const db = await getDB();
-    const patients = await db.getPatients();
+    const patients = await PatientController.getPatients();
     return NextResponse.json(patients);
   } catch (err: any) {
     console.error('API Patients GET error:', err);
@@ -17,15 +16,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { name, birth_date } = await request.json();
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-    }
-
-    const db = await getDB();
-    const newPatient = await db.createPatient(name.trim(), birth_date);
+    const newPatient = await PatientController.createPatient(name, birth_date);
     return NextResponse.json(newPatient);
   } catch (err: any) {
     console.error('API Patients POST error:', err);
+    
+    // Check if error is validation error (e.g. name required) to return a 400 Bad Request
+    if (err.message === 'Name is required') {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

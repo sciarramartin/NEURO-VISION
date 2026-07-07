@@ -464,3 +464,29 @@ h3 {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
+
+/* Glow Effects for active clinical states */
+.glow-emerald {
+  box-shadow: 0 0 20px var(--success-glow);
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px var(--warning-glow);
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Soft transition properties */
+.transition-premium {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}

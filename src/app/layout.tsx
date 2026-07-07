@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.compiled.css';
-import { AppProvider } from '@/context/AppContext';
-import NavigationSidebar from '@/components/NavigationSidebar';
+import { AppProvider } from '@/contexto_global/AppContext';
+import NavigationSidebar from '@/componentes_visuales/NavigationSidebar';
 
 export const metadata: Metadata = {
   title: 'Neuro Vision Analytic - Análisis Facial',
