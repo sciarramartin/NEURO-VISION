@@ -72,7 +72,8 @@ export function TooltipAyuda({
     >
       <HelpCircle
         size={iconoSize}
-        className="text-zinc-600 hover:text-indigo-400 transition-colors cursor-help"
+        className="text-[var(--info)] opacity-75 hover:opacity-100 hover:scale-125 transition-all cursor-help"
+        style={{ color: 'var(--info)' }}
       />
 
       {visible && (

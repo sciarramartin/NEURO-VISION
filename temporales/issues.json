@@ -1,0 +1,104 @@
+﻿[
+  {
+    "key": "KAN-9",
+    "summary": "KAN-Story-1: Selecci├│n de Landmarks Faciales en UI",
+    "description": "Permitir al evaluador elegir qu├® regiones faciales monitorear (Frente/Cejas, Ojos/P├írpados, Labios/Boca, Nariz) mediante interruptores en la pantalla de configuraci├│n.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-10",
+    "summary": "KAN-Story-2: Extracci├│n de Landmarks en Tiempo Real",
+    "description": "Integrar MediaPipe Face Mesh para obtener las coordenadas espaciales X, Y, Z de los puntos faciales seleccionados.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-11",
+    "summary": "KAN-Story-3: C├ílculo de Rango de Movimiento (ROM) y Asimetr├¡a",
+    "description": "Desarrollar los m├│dulos para calcular amplitudes angulares y el porcentaje de asimetr├¡a bilateral en reposo y en sonrisa.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-12",
+    "summary": "KAN-Story-4: Comparativa Pre vs Post-L-Dopa Facial",
+    "description": "Comparar autom├íticamente las curvas de ROM de una sesi├│n previa a la medicaci├│n contra una posterior para medir la eficacia farmacol├│gica.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-13",
+    "summary": "KAN-Story-5: Medici├│n Lateral de Amplitud de Paso",
+    "description": "Detectar landmarks de ambos talones con MediaPipe Pose y estimar la distancia m├íxima (paso) en vista lateral.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-14",
+    "summary": "KAN-Story-6: Historial Comparativo de Amplitud de Paso",
+    "description": "Guardar e historizar la amplitud de paso del paciente para evaluaciones cl├¡nicas de Hidrocefalia Normotensiva.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-15",
+    "summary": "KAN-Story-7: Sincronizaci├│n Temporal Multic├ímara",
+    "description": "Sincronizar la adquisici├│n de video de dos o m├ís c├ímaras conectadas para capturar vistas simult├íneas de frente y perfil.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-16",
+    "summary": "KAN-Story-8: An├ílisis Biomec├ínico Tridimensional (3D)",
+    "description": "Estimar las coordenadas espaciales tridimensionales de landmarks corporales combinando los feeds de c├ímaras sincronizadas.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-17",
+    "summary": "KAN-Story-9: Medici├│n Articular de Tren Superior",
+    "description": "Calcular rangos angulares bilaterales en tiempo real para Hombro, Codo y Mu├▒eca.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-18",
+    "summary": "KAN-Story-10: Medici├│n Articular de Tren Inferior",
+    "description": "Calcular rangos angulares bilaterales para Cadera, Rodilla y Tobillo.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-19",
+    "summary": "KAN-Story-11: Comparativa Longitudinal para Espasticidad",
+    "description": "Graficar la evoluci├│n de los rangos de movimiento articulares antes y despu├®s de intervenciones terap├®uticas contra la espasticidad.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-20",
+    "summary": "KAN-Story-12: Captura de Datos Inerciales de Wearables",
+    "description": "Conectar un canal de escucha de datos en tiempo real (aceler├│metro y giroscopio) desde celular y reloj inteligente.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-21",
+    "summary": "KAN-Story-13: Algoritmo de Cuantificaci├│n del Temblor",
+    "description": "Procesar la se├▒al del aceler├│metro con FFT para esitmar la frecuencia dominante (en Hz) y la amplitud del temblor parkinsoniano.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-22",
+    "summary": "KAN-Story-14: Registro de Par├ímetros de Estimulaci├│n Cerebral (DBS)",
+    "description": "Permitir registrar los voltajes e intensidades del DBS del paciente y cruzarlos contra la severidad medida del temblor.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-23",
+    "summary": "KAN-Story-15: Exportaci├│n de Datos Crudos a Excel",
+    "description": "Descargar la serie de tiempo de ├íngulos y velocidades en formato .xlsx.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-24",
+    "summary": "KAN-Story-16: Visualizaci├│n Gr├ífica Longitudinal",
+    "description": "Mostrar gr├íficos de barras comparativas y l├¡neas de evoluci├│n en la web.",
+    "status": "Por hacer"
+  },
+  {
+    "key": "KAN-25",
+    "summary": "KAN-Story-17: Generaci├│n de Informes Cl├¡nicos con IA",
+    "description": "Enviar las m├®tricas objetivas a un LLM para redactar un informe cl├¡nico interpretativo estructurado en formato PDF.",
+    "status": "Por hacer"
+  }
+]

@@ -24,14 +24,75 @@ const WebcamCapture = dynamic(() => import('@/componentes_visuales/WebcamCapture
 });
 
 // ── Region button metadata (M1) ──────────────────────────────────────────────
-const REGION_BOTONES: { key: RegionKey; icono: string; label: string }[] = [
-  { key: 'CEJA',   icono: '🧠', label: 'Ceja'    },
-  { key: 'PARPADO',icono: '👁', label: 'Párpado' },
-  { key: 'BOCA',   icono: '👄', label: 'Boca'    },
-  { key: 'NARIZ',  icono: '👃', label: 'Nariz'   },
-  { key: 'CODO',   icono: '💪', label: 'Codo'    },
-  { key: 'MUÑECA', icono: '🤚', label: 'Muñeca'  },
-  { key: 'HOMBRO', icono: '🏋', label: 'Hombro'  },
+const REGION_BOTONES: { key: RegionKey; icono: React.ReactNode; label: string }[] = [
+  {
+    key: 'CEJA',
+    label: 'Ceja',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-indigo-400">
+        <path d="M3 13C6 8 9 8 11 10M13 10C15 8 18 8 21 13" />
+      </svg>
+    )
+  },
+  {
+    key: 'PARPADO',
+    label: 'Párpado',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-cyan-400">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3.5" strokeWidth="1.5" />
+      </svg>
+    )
+  },
+  {
+    key: 'BOCA',
+    label: 'Boca',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-pink-400">
+        <path d="M4 10c4 4 12 4 16 0M4 10c4-2 12-2 16 0Z" />
+      </svg>
+    )
+  },
+  {
+    key: 'NARIZ',
+    label: 'Nariz',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+        <path d="M12 4v12M9 13h6M8 16c2 1 6 1 8 0" />
+      </svg>
+    )
+  },
+  {
+    key: 'CODO',
+    label: 'Codo',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+        <circle cx="18" cy="18" r="2" />
+        <circle cx="6" cy="6" r="2" />
+        <path d="M6 8v6a4 4 0 0 0 4 4h6" />
+      </svg>
+    )
+  },
+  {
+    key: 'MUÑECA',
+    label: 'Muñeca',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400">
+        <rect x="7" y="11" width="10" height="8" rx="2" />
+        <path d="M12 11V5M10 5h4" />
+      </svg>
+    )
+  },
+  {
+    key: 'HOMBRO',
+    label: 'Hombro',
+    icono: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400">
+        <path d="M4 18v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2" />
+        <circle cx="12" cy="6" r="3" />
+      </svg>
+    )
+  }
 ];
 
 // Enfoque C slot colors (must match WebcamCapture COLORES_SLOT)
@@ -48,13 +109,14 @@ export function CaptureView() {
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [newPatientName, setNewPatientName] = useState<string>('');
-  const [showAddPatient, setShowAddPatient] = useState(false);
+  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
 
   // ── Measurement config ─────────────────────────────────────────────────────
   const [modo, setModo]     = useState<'PRE' | 'POST'>('PRE');
   const [region, setRegion] = useState<RegionKey>('CEJA');
   const [lado, setLado]     = useState<LadoKey>('DERECHA');
   const [isMockMode, setIsMockMode] = useState(true);
+  const [zoom, setZoom] = useState<number>(1);
 
   // ── Enfoque C state ────────────────────────────────────────────────────────
   const [modoSeleccionActivo, setModoSeleccionActivo] = useState(false);
@@ -65,6 +127,13 @@ export function CaptureView() {
     slotsPersonalizados.every(s => s !== null)
       ? (slotsPersonalizados as [number, number, number])
       : null;
+
+  // Reset zoom when camera goes inactive
+  useEffect(() => {
+    if (!isCameraActive) {
+      setZoom(1);
+    }
+  }, [isCameraActive]);
 
   // ── KAN-10 M5: tracking quality ────────────────────────────────────────────
   const [trackingQuality, setTrackingQuality] = useState<CalidadTracking | null>(null);
@@ -221,11 +290,11 @@ export function CaptureView() {
       const data = await response.json();
       if (!response.ok) throw new Error('Create failed');
       if (data) { setPatients(prev => [...prev, data]); setSelectedPatientId(data.id); }
-      setNewPatientName(''); setShowAddPatient(false);
+      setNewPatientName(''); setIsPatientModalOpen(false);
     } catch {
       const newMock = { id: `mock-${Date.now()}`, name: newPatientName.trim() };
       setPatients(prev => [...prev, newMock]); setSelectedPatientId(newMock.id);
-      setNewPatientName(''); setShowAddPatient(false);
+      setNewPatientName(''); setIsPatientModalOpen(false);
     }
   };
 

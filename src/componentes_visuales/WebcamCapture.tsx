@@ -32,6 +32,8 @@ interface WebcamCaptureProps {
   landmarksPersonalizados: [number, number, number] | null;
   /** Enfoque C: when true the canvas is in landmark-selection mode */
   modoSeleccionActivo: boolean;
+  /** Zoom factor: 1.0 to 3.0 */
+  zoom?: number;
   onDataCollected: (data: { tiempo: number; angulo: number }[]) => void;
   /** KAN-10 / M5: called every ~1s with current tracking quality */
   onTrackingQuality?: (quality: CalidadTracking) => void;
@@ -46,6 +48,7 @@ export default function WebcamCapture({
   isMockMode,
   landmarksPersonalizados,
   modoSeleccionActivo,
+  zoom = 1,
   onDataCollected,
   onTrackingQuality,
   onLandmarkClick
@@ -71,6 +74,25 @@ export default function WebcamCapture({
   const filesetResolverRef = useRef<any>(null);
   const faceLandmarkerRef = useRef<any>(null);
   const poseLandmarkerRef = useRef<any>(null);
+
+  // ─── Coordinate transformation helper (Zoom mapping) ──────────────────────
+  const getCanvasCoords = (lm: LandmarkRaw, canvasW: number, canvasH: number) => {
+    const rawX = lm.x * canvasW;
+    const rawY = lm.y * canvasH;
+
+    if (zoom === 1) {
+      return { x: rawX, y: rawY };
+    }
+
+    const srcW = canvasW / zoom;
+    const srcH = canvasH / zoom;
+    const srcX = (canvasW - srcW) / 2;
+    const srcY = (canvasH - srcH) / 2;
+
+    const px = (rawX - srcX) * (canvasW / srcW);
+    const py = (rawY - srcY) * (canvasH / srcH);
+    return { x: px, y: py };
+  };
 
   // ─── Recording lifecycle ───────────────────────────────────────────────────
   useEffect(() => {
@@ -212,7 +234,7 @@ export default function WebcamCapture({
     }
   };
 
-  // ─── Canvas interaction (Enfoque C) ───────────────────────────────────────
+  // ─── Canvas interaction (Enfoque C with Zoom adaptation) ───────────────────
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!modoSeleccionActivo || isMockMode || latestLandmarksRef.current.length === 0) return;
     const canvas = liveCanvasRef.current;
@@ -224,14 +246,28 @@ export default function WebcamCapture({
     // Compensate for CSS scale-x-[-1] mirror
     const mirroredX = canvas.width - rawX;
 
+    let videoX = mirroredX;
+    let videoY = rawY;
+
+    if (zoom > 1) {
+      const srcW = canvas.width / zoom;
+      const srcH = canvas.height / zoom;
+      const srcX = (canvas.width - srcW) / 2;
+      const srcY = (canvas.height - srcH) / 2;
+
+      // Inverse zoom mapping: maps zoomed canvas coordinate back to original video pixels
+      videoX = mirroredX * (srcW / canvas.width) + srcX;
+      videoY = rawY * (srcH / canvas.height) + srcY;
+    }
+
     const idx = encontrarLandmarkMasCercano(
-      mirroredX, rawY,
+      videoX, videoY,
       latestLandmarksRef.current,
       canvas.width, canvas.height,
       18
     );
     setHoveredLandmark(idx ?? -1);
-  }, [modoSeleccionActivo, isMockMode]);
+  }, [modoSeleccionActivo, isMockMode, zoom]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!modoSeleccionActivo || isMockMode || latestLandmarksRef.current.length === 0) return;
@@ -243,8 +279,21 @@ export default function WebcamCapture({
     const rawY = (e.clientY - rect.top) * (canvas.height / rect.height);
     const mirroredX = canvas.width - rawX;
 
+    let videoX = mirroredX;
+    let videoY = rawY;
+
+    if (zoom > 1) {
+      const srcW = canvas.width / zoom;
+      const srcH = canvas.height / zoom;
+      const srcX = (canvas.width - srcW) / 2;
+      const srcY = (canvas.height - srcH) / 2;
+
+      videoX = mirroredX * (srcW / canvas.width) + srcX;
+      videoY = rawY * (srcH / canvas.height) + srcY;
+    }
+
     const idx = encontrarLandmarkMasCercano(
-      mirroredX, rawY,
+      videoX, videoY,
       latestLandmarksRef.current,
       canvas.width, canvas.height,
       18
@@ -252,7 +301,7 @@ export default function WebcamCapture({
     if (idx !== null && onLandmarkClick) {
       onLandmarkClick(idx);
     }
-  }, [modoSeleccionActivo, isMockMode, onLandmarkClick]);
+  }, [modoSeleccionActivo, isMockMode, zoom, onLandmarkClick]);
 
   // ─── Drawing helpers ───────────────────────────────────────────────────────
   const drawAngleOverlays = (
@@ -307,8 +356,7 @@ export default function WebcamCapture({
   ) => {
     if (hoveredIdx < 0 || !landmarks[hoveredIdx]) return;
     const lm = landmarks[hoveredIdx];
-    const px = lm.x * canvasW;
-    const py = lm.y * canvasH;
+    const { x: px, y: py } = getCanvasCoords(lm, canvasW, canvasH);
 
     ctx.save();
     ctx.strokeStyle = '#fbbf24';
@@ -335,8 +383,7 @@ export default function WebcamCapture({
   ) => {
     ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
     landmarks.forEach(lm => {
-      const px = lm.x * canvasW;
-      const py = lm.y * canvasH;
+      const { x: px, y: py } = getCanvasCoords(lm, canvasW, canvasH);
       ctx.beginPath();
       ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
       ctx.fill();
@@ -347,8 +394,7 @@ export default function WebcamCapture({
       customIndices.forEach((idx, slot) => {
         if (idx < 0 || !landmarks[idx]) return;
         const lm = landmarks[idx];
-        const px = lm.x * canvasW;
-        const py = lm.y * canvasH;
+        const { x: px, y: py } = getCanvasCoords(lm, canvasW, canvasH);
         ctx.fillStyle = COLORES_SLOT[slot];
         ctx.beginPath();
         ctx.arc(px, py, 7, 0, 2 * Math.PI);
@@ -402,7 +448,18 @@ export default function WebcamCapture({
       if (isMockMode) {
         drawMockLandmarks(ctxLive, ctxMesh, liveCanvas.width, liveCanvas.height, now);
       } else if (video && video.readyState >= 2) {
-        ctxLive.drawImage(video, 0, 0, liveCanvas.width, liveCanvas.height);
+        // Draw video stream (zoomed or full)
+        if (zoom === 1) {
+          ctxLive.drawImage(video, 0, 0, liveCanvas.width, liveCanvas.height);
+        } else {
+          const vWidth = video.videoWidth || 640;
+          const vHeight = video.videoHeight || 480;
+          const srcW = vWidth / zoom;
+          const srcH = vHeight / zoom;
+          const srcX = (vWidth - srcW) / 2;
+          const srcY = (vHeight - srcH) / 2;
+          ctxLive.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, liveCanvas.width, liveCanvas.height);
+        }
 
         if (regionType === 'rostro' && faceLandmarkerRef.current) {
           const results = faceLandmarkerRef.current.detectForVideo(video, now);
@@ -422,8 +479,7 @@ export default function WebcamCapture({
               ctxMesh.fillStyle = '#6366f1';
 
               landmarks.forEach(lm => {
-                const x = lm.x * liveCanvas.width;
-                const y = lm.y * liveCanvas.height;
+                const { x, y } = getCanvasCoords(lm, liveCanvas.width, liveCanvas.height);
                 ctxLive.beginPath();
                 ctxLive.arc(x, y, 1, 0, 2 * Math.PI);
                 ctxLive.fill();
@@ -439,14 +495,16 @@ export default function WebcamCapture({
               });
 
               if (visibilityOk) {
-                const pts = activeIndices.map(idx => ({
-                  x: landmarks[idx].x * liveCanvas.width,
-                  y: landmarks[idx].y * liveCanvas.height
-                }));
+                const pts = activeIndices.map(idx => {
+                  const lm = landmarks[idx];
+                  if (!lm) return null;
+                  return getCanvasCoords(lm, liveCanvas.width, liveCanvas.height);
+                });
 
-                if (pts.length === 3) {
-                  drawAngleOverlays(ctxLive, ctxMesh, pts, isCustom);
-                  const currentAngle = calcularAngulo(pts[0], pts[1], pts[2]);
+                if (pts.every(p => p !== null)) {
+                  const nonNullPts = pts as Point[];
+                  drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
+                  const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
 
                   if (isRecording && startTimeRef.current !== null) {
                     const elapsed = (performance.now() - startTimeRef.current) / 1000;
@@ -466,8 +524,7 @@ export default function WebcamCapture({
             ctxMesh.fillStyle = '#6366f1';
 
             landmarks.forEach(lm => {
-              const x = lm.x * liveCanvas.width;
-              const y = lm.y * liveCanvas.height;
+              const { x, y } = getCanvasCoords(lm, liveCanvas.width, liveCanvas.height);
               ctxLive.beginPath();
               ctxLive.arc(x, y, 2.5, 0, 2 * Math.PI);
               ctxLive.fill();
@@ -487,9 +544,11 @@ export default function WebcamCapture({
               ctx.lineWidth = 1.5;
               poseConnections.forEach(([i1, i2]) => {
                 if (landmarks[i1] && landmarks[i2]) {
+                  const p1 = getCanvasCoords(landmarks[i1], liveCanvas.width, liveCanvas.height);
+                  const p2 = getCanvasCoords(landmarks[i2], liveCanvas.width, liveCanvas.height);
                   ctx.beginPath();
-                  ctx.moveTo(landmarks[i1].x * liveCanvas.width, landmarks[i1].y * liveCanvas.height);
-                  ctx.lineTo(landmarks[i2].x * liveCanvas.width, landmarks[i2].y * liveCanvas.height);
+                  ctx.moveTo(p1.x, p1.y);
+                  ctx.lineTo(p2.x, p2.y);
                   ctx.stroke();
                 }
               });
@@ -504,10 +563,7 @@ export default function WebcamCapture({
             if (visibilityOk) {
               const pts = activeIndices.map(idx => {
                 if (!landmarks[idx]) return null;
-                return {
-                  x: landmarks[idx].x * liveCanvas.width,
-                  y: landmarks[idx].y * liveCanvas.height
-                };
+                return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
               });
 
               if (pts.every(p => p !== null)) {
@@ -532,7 +588,7 @@ export default function WebcamCapture({
     return () => {
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
     };
-  }, [region, lado, isRecording, isMockMode, landmarksPersonalizados, modoSeleccionActivo, hoveredLandmark]);
+  }, [region, lado, isRecording, isMockMode, landmarksPersonalizados, modoSeleccionActivo, hoveredLandmark, zoom]);
 
   // ─── Mock mode rendering ───────────────────────────────────────────────────
   const drawMockLandmarks = (
