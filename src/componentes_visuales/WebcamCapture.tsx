@@ -3,6 +3,7 @@
 import React from 'react';
 import { useMediaPipe } from './hooks/useMediaPipe';
 import { RegionKey, LadoKey, CalidadTracking } from '@/biblioteca/math/angles';
+import { Camera, Activity } from 'lucide-react';
 
 interface WebcamCaptureProps {
   region: RegionKey;
@@ -17,117 +18,87 @@ interface WebcamCaptureProps {
   onLandmarkClick?: (index: number) => void;
 }
 
-/**
- * Composite / Presenter Pattern: Componente visual puro para la rejilla de los Canvas de Webcam.
- * Delegando todo el procesamiento del hardware y detección en el hook `useMediaPipe`.
- * 
- * Corrección Crítica Vercel: Se posiciona el elemento <video> de forma invisible pero activa a 640x480
- * en el DOM off-screen, evitando que Chrome congele las texturas (solución a bug de resultados vacíos).
- */
 export default function WebcamCapture({
-  region,
-  lado,
-  isRecording,
-  isMockMode,
-  landmarksPersonalizados,
-  modoSeleccionActivo,
-  zoom = 1,
-  onDataCollected,
-  onTrackingQuality,
-  onLandmarkClick
+  region, lado, isRecording, isMockMode,
+  landmarksPersonalizados, modoSeleccionActivo, zoom = 1,
+  onDataCollected, onTrackingQuality, onLandmarkClick
 }: WebcamCaptureProps) {
   const {
-    videoRef,
-    liveCanvasRef,
-    meshCanvasRef,
-    loading,
-    errorMsg,
-    fps,
-    handleCanvasMouseMove,
-    handleCanvasClick
+    videoRef, liveCanvasRef, meshCanvasRef,
+    loading, errorMsg, fps,
+    handleCanvasMouseMove, handleCanvasClick
   } = useMediaPipe({
-    region,
-    lado,
-    isRecording,
-    isMockMode,
-    landmarksPersonalizados,
-    modoSeleccionActivo,
-    zoom,
-    onDataCollected,
-    onTrackingQuality,
-    onLandmarkClick
+    region, lado, isRecording, isMockMode,
+    landmarksPersonalizados, modoSeleccionActivo, zoom,
+    onDataCollected, onTrackingQuality, onLandmarkClick
   });
 
   return (
     <div className="flex flex-col gap-4 w-full">
       {loading && (
-        <div className="flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl h-[420px] transition-all">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-emerald-500 mb-4" />
-          <p className="text-zinc-550 dark:text-zinc-400 text-sm font-semibold">Cargando MediaPipe WASM e inicializando modelos...</p>
+        <div className="flex flex-col items-center justify-center p-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', height: 420 }}>
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2" style={{ borderColor: 'var(--accent)', marginBottom: 16 }} />
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>Cargando MediaPipe WASM...</p>
         </div>
       )}
 
       {errorMsg && (
-        <div className="flex flex-col items-center justify-center p-8 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl text-center h-[420px] transition-all">
-          <p className="text-red-600 dark:text-red-400 font-bold mb-2">Error de Inicialización</p>
-          <p className="text-zinc-650 dark:text-zinc-400 text-sm max-w-md">{errorMsg}</p>
+        <div className="flex flex-col items-center justify-center p-8" style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger-border)', borderRadius: 'var(--radius-md)', height: 420, textAlign: 'center' }}>
+          <p style={{ color: 'var(--danger)', fontWeight: 700, marginBottom: 8 }}>Error de Inicialización</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{errorMsg}</p>
         </div>
       )}
 
-      {/* 
-        Video invisible pero activo en dimensiones lógicas óptimas (640x480).
-        Esto previene que los navegadores desactiven el stream y dejen la cámara en 0x0.
-      */}
-      <video
-        ref={videoRef}
-        className="absolute pointer-events-none opacity-0"
-        style={{ top: '-9999px', left: '-9999px', width: '640px', height: '480px' }}
-        playsInline
-        muted
-      />
+      <video ref={videoRef} className="absolute pointer-events-none opacity-0" style={{ top: '-9999px', left: '-9999px', width: '640px', height: '480px' }} playsInline muted />
 
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-5 w-full ${loading || errorMsg ? 'hidden' : ''}`}>
-        {/* Live Camera Canvas */}
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 w-full ${loading || errorMsg ? 'hidden' : ''}`}>
         <div className="flex flex-col gap-2 w-full">
-          <div className="flex justify-between items-center px-1">
-            <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 tracking-wide uppercase">VISTA CÁMARA</span>
-            <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 2px' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+              VISTA CÁMARA
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {modoSeleccionActivo && !isMockMode && (
-                <span className="text-[10px] bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-mono font-bold leading-none animate-pulse">
-                  Ajuste Fino Activo
+                <span style={{ fontSize: 9, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                  Ajuste Activo
                 </span>
               )}
-              <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-450 font-bold">FPS: {fps}</span>
+              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 700 }}>FPS: {fps}</span>
             </div>
           </div>
-          <div className="relative w-full aspect-video bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-md">
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+            <div className="viewfinder-frame">
+              <div className="viewfinder-corner tl" />
+              <div className="viewfinder-corner tr" />
+              <div className="viewfinder-corner bl" />
+              <div className="viewfinder-corner br" />
+            </div>
             <canvas
               ref={liveCanvasRef}
               className="absolute inset-0 w-full h-full object-cover cursor-crosshair"
-              width="640"
-              height="480"
+              width="640" height="480"
               onMouseMove={handleCanvasMouseMove}
               onClick={handleCanvasClick}
             />
           </div>
         </div>
 
-        {/* Mesh Visualizer Canvas */}
         <div className="flex flex-col gap-2 w-full">
-          <div className="flex justify-between items-center px-1">
-            <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 tracking-wide uppercase">VISTA MALLA BIOMÉTRICA</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 2px' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+              MALLA BIOMÉTRICA
+            </span>
             {isMockMode && (
-              <span className="text-[10px] bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-mono font-bold leading-none">
+              <span style={{ fontSize: 9, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                 Simulado
               </span>
             )}
           </div>
-          <div className="relative w-full aspect-video bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-md">
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
             <canvas
               ref={meshCanvasRef}
               className="absolute inset-0 w-full h-full object-cover"
-              width="640"
-              height="480"
+              width="640" height="480"
             />
           </div>
         </div>
