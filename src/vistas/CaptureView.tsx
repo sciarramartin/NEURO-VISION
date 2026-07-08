@@ -50,7 +50,10 @@ export function CaptureView() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const handleDataCollected = (data: { tiempo: number; angulo: number }[]) => {
+  const handleDataCollected = (raw: { tiempo: number; angulo: number }[]) => {
+    // Filtrar ángulos = 0 (error de puntos superpuestos en la malla,
+    // no mediciones reales). Esto evita contaminar ROM, promedio y velocidad.
+    const data = raw.filter(d => d.angulo > 0);
     setCapturedData(data);
     if (data.length < 2) return;
 
