@@ -327,26 +327,19 @@ export function useMediaPipe({
                 ctxMesh.fill();
               });
 
-              const visibilityOk = activeIndices.every(idx => {
-                const lm = landmarks[idx];
-                return lm && (lm.visibility === undefined || lm.visibility >= UMBRAL_VISIBILIDAD);
+              const pts = activeIndices.map(idx => {
+                if (!landmarks[idx]) return null;
+                return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
               });
 
-              if (visibilityOk) {
-                const pts = activeIndices.map(idx => {
-                  if (!landmarks[idx]) return null;
-                  return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
-                });
+              if (pts.every(p => p !== null)) {
+                const nonNullPts = pts as Point[];
+                drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
+                const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
 
-                if (pts.every(p => p !== null)) {
-                  const nonNullPts = pts as Point[];
-                  drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
-                  const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
-
-                  if (isRecording && startTimeRef.current !== null) {
-                    const elapsed = (performance.now() - startTimeRef.current) / 1000;
-                    recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
-                  }
+                if (isRecording && startTimeRef.current !== null && currentAngle > 0) {
+                  const elapsed = (performance.now() - startTimeRef.current) / 1000;
+                  recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
                 }
               }
             }
@@ -376,26 +369,19 @@ export function useMediaPipe({
               getCanvasCoords(lm, liveCanvas.width, liveCanvas.height)
             );
 
-            const visibilityOk = activeIndices.every(idx => {
-              const lm = landmarks[idx];
-              return lm && (lm.visibility === undefined || lm.visibility >= UMBRAL_VISIBILIDAD);
+            const pts = activeIndices.map(idx => {
+              if (!landmarks[idx]) return null;
+              return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
             });
 
-            if (visibilityOk) {
-              const pts = activeIndices.map(idx => {
-                if (!landmarks[idx]) return null;
-                return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
-              });
+            if (pts.every(p => p !== null)) {
+              const nonNullPts = pts as Point[];
+              drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
+              const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
 
-              if (pts.every(p => p !== null)) {
-                const nonNullPts = pts as Point[];
-                drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
-                const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
-
-                if (isRecording && startTimeRef.current !== null) {
-                  const elapsed = (performance.now() - startTimeRef.current) / 1000;
-                  recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
-                }
+              if (isRecording && startTimeRef.current !== null && currentAngle > 0) {
+                const elapsed = (performance.now() - startTimeRef.current) / 1000;
+                recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
               }
             }
           }
@@ -420,9 +406,8 @@ export function useMediaPipe({
     const rect = canvas.getBoundingClientRect();
     const rawX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const rawY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    const mirroredX = canvas.width - rawX;
 
-    let videoX = mirroredX;
+    let videoX = rawX;
     let videoY = rawY;
 
     if (zoom > 1) {
@@ -431,7 +416,7 @@ export function useMediaPipe({
       const srcX = (canvas.width - srcW) / 2;
       const srcY = (canvas.height - srcH) / 2;
 
-      videoX = mirroredX * (srcW / canvas.width) + srcX;
+      videoX = rawX * (srcW / canvas.width) + srcX;
       videoY = rawY * (srcH / canvas.height) + srcY;
     }
 
@@ -453,9 +438,8 @@ export function useMediaPipe({
     const rect = canvas.getBoundingClientRect();
     const rawX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const rawY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    const mirroredX = canvas.width - rawX;
 
-    let videoX = mirroredX;
+    let videoX = rawX;
     let videoY = rawY;
 
     if (zoom > 1) {
@@ -464,7 +448,7 @@ export function useMediaPipe({
       const srcX = (canvas.width - srcW) / 2;
       const srcY = (canvas.height - srcH) / 2;
 
-      videoX = mirroredX * (srcW / canvas.width) + srcX;
+      videoX = rawX * (srcW / canvas.width) + srcX;
       videoY = rawY * (srcH / canvas.height) + srcY;
     }
 

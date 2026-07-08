@@ -52,7 +52,7 @@ export function CaptureView() {
 
   const handleDataCollected = (data: { tiempo: number; angulo: number }[]) => {
     setCapturedData(data);
-    if (data.length < 3) return;
+    if (data.length < 2) return;
 
     const angles = data.map(d => d.angulo);
     const times = data.map(d => d.tiempo);
