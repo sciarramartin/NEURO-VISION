@@ -47,15 +47,48 @@ export function CaptureView() {
   const [trackingQuality, setTrackingQuality] = useState<string>('excelente');
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [recordingFeedback, setRecordingFeedback] = useState<{ type: 'warning' | 'info' | 'error'; message: string } | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   const handleDataCollected = (raw: { tiempo: number; angulo: number }[]) => {
-    // Filtrar ángulos = 0 (error de puntos superpuestos en la malla,
-    // no mediciones reales). Esto evita contaminar ROM, promedio y velocidad.
+    // Filtrar ángulos = 0: ocurre cuando los landmarks están superpuestos
+    // en pantalla (normV1=0 o normV2=0 en calcularAngulo). No es un
+    // ángulo real, es un artefacto de la malla facial. Lo filtramos
+    // para no contaminar ROM, promedio ni velocidad máxima.
     const data = raw.filter(d => d.angulo > 0);
     setCapturedData(data);
-    if (data.length < 2) return;
+
+    if (raw.length > 0 && data.length === 0) {
+      setRecordingFeedback({
+        type: 'warning',
+        message: 'No se pudieron calcular ángulos válidos. Los 3 landmarks de medición (' +
+          defaultIndices.join(', ') + ') están demasiado próximos en la malla facial para formar un ángulo. ' +
+          'Pruebe seleccionar otra región anatómica o use "Ajuste Fino de Landmarks" para elegir puntos más separados.'
+      });
+      return;
+    }
+
+    if (data.length < 2) {
+      if (raw.length === 0) {
+        setRecordingFeedback({
+          type: 'info',
+          message: 'No se detectaron landmarks faciales durante la grabación. ' +
+            'Asegúrese de que el rostro del paciente esté visible y bien iluminado frente a la cámara.'
+        });
+      } else {
+        setRecordingFeedback({
+          type: 'info',
+          message: 'Solo se registraron ' + raw.length + ' muestra(s) con ángulo > 0° de ' + raw.length + ' total(es). ' +
+            'Se necesitan al menos 2 muestras válidas para calcular métricas. ' +
+            'Intente grabar por más tiempo o verifique la detección facial.'
+        });
+      }
+      return;
+    }
+
+    // Datos válidos: limpiar feedback y calcular métricas
+    setRecordingFeedback(null);
 
     const angles = data.map(d => d.angulo);
     const times = data.map(d => d.tiempo);
@@ -103,6 +136,7 @@ export function CaptureView() {
     if (!selectedPatientId) { alert('Seleccione un paciente primero.'); return; }
     setCalculatedMetrics(null);
     setCapturedData([]);
+    setRecordingFeedback(null);
     startRecording();
   };
 
@@ -117,7 +151,7 @@ export function CaptureView() {
   };
 
   const handleDiscardRecording = () => {
-    if (confirm('¿Descartar esta grabación?')) { setCalculatedMetrics(null); setCapturedData([]); }
+    if (confirm('¿Descartar esta grabación?')) { setCalculatedMetrics(null); setCapturedData([]); setRecordingFeedback(null); }
   };
 
   const getTimestamp = () => {
@@ -397,7 +431,29 @@ export function CaptureView() {
             )}
           </div>
 
-          <ResultadosCard metrics={calculatedMetrics} saveStatus={saveStatus} onSave={handleSaveSession} onDiscard={handleDiscardRecording} />
+          {recordingFeedback ? (
+            <div className="card animate-fade-in" style={{
+              padding: 16, gap: 8,
+              borderColor: recordingFeedback.type === 'warning' ? 'var(--warning-border)' :
+                recordingFeedback.type === 'error' ? 'var(--danger-border)' : 'var(--info-border)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottom: '1px solid var(--border-card)' }}>
+                <AlertTriangle size={15} style={{
+                  color: recordingFeedback.type === 'warning' ? 'var(--warning)' :
+                    recordingFeedback.type === 'error' ? 'var(--danger)' : 'var(--info)'
+                }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {recordingFeedback.type === 'warning' ? 'Aviso Clínico' :
+                   recordingFeedback.type === 'error' ? 'Error de Medición' : 'Información'}
+                </span>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6, padding: '4px 0' }}>
+                {recordingFeedback.message}
+              </p>
+            </div>
+          ) : (
+            <ResultadosCard metrics={calculatedMetrics} saveStatus={saveStatus} onSave={handleSaveSession} onDiscard={handleDiscardRecording} />
+          )}
         </div>
       </div>
 
