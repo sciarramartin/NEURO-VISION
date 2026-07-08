@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRecordingState } from './hooks/useRecordingState';
 import { useCaptureData } from './hooks/useCaptureData';
@@ -19,9 +19,8 @@ const WebcamCapture = dynamic(() => import('@/componentes_visuales/WebcamCapture
 
 const QUALITY_CONFIG: Record<string, { bg: string; color: string; dot: string; label: string }> = {
   excelente: { bg: '#0A2E1A', color: '#10B981', dot: '#10B981', label: 'Tracking: Excelente' },
-  bueno: { bg: '#0A1A2E', color: '#3B82F6', dot: '#3B82F6', label: 'Tracking: Bueno' },
-  inestable: { bg: '#2E1A0A', color: '#F59E0B', dot: '#F59E0B', label: 'Tracking: Inestable' },
-  critico: { bg: '#2E0A0A', color: '#EF4444', dot: '#EF4444', label: 'Oclusión/Pérdida' }
+  degradado: { bg: '#2E1A0A', color: '#F59E0B', dot: '#F59E0B', label: 'Tracking: Degradado' },
+  perdido: { bg: '#2E0A0A', color: '#EF4444', dot: '#EF4444', label: 'Oclusión/Pérdida' }
 };
 
 const SLOT_LABELS = ['P1 (Origen)', 'Vértice (Ángulo)', 'P3 (Destino)'];
@@ -47,6 +46,9 @@ export function CaptureView() {
   const [capturedData, setCapturedData] = useState<any[]>([]);
   const [trackingQuality, setTrackingQuality] = useState<string>('excelente');
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const handleDataCollected = (data: { tiempo: number; angulo: number }[]) => {
     setCapturedData(data);
@@ -131,10 +133,12 @@ export function CaptureView() {
           <div className="stepper-step">Resultados</div>
         </div>
         <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-          <Activity size={11} style={{ color: 'var(--accent)' }} />
-          Sesión activa · {getTimestamp()}
-        </div>
+        {mounted && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <Activity size={11} style={{ color: 'var(--accent)' }} />
+            Sesión activa · {getTimestamp()}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
@@ -400,7 +404,7 @@ export function CaptureView() {
             {isRecording ? 'GRABANDO' : isCameraActive ? 'CÁMARA ACTIVA' : 'INACTIVO'}
           </span></span>
           <span style={{ opacity: 0.4 }}>|</span>
-          <span>Sesión: {getTimestamp()}</span>
+          {mounted && <span>Sesión: {getTimestamp()}</span>}
           <span style={{ opacity: 0.4 }}>|</span>
           <span>Paciente: {patients.find(p => p.id === selectedPatientId)?.name || 'No seleccionado'}</span>
         </div>
