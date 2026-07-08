@@ -9,15 +9,16 @@ import dynamic from 'next/dynamic';
 const LongitudinalCharts = dynamic(() => import('@/componentes_visuales/LongitudinalCharts'), {
   ssr: false,
   loading: () => (
-    <div className="card h-96 flex flex-col items-center justify-center bg-zinc-900 border border-zinc-800 rounded-xl text-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500 mb-4" />
-      <p className="text-zinc-400 text-sm">Cargando gráficos de tendencias...</p>
+    <div className="card" style={{ height: 384, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 mb-4" style={{ borderColor: 'var(--accent)' }} />
+      <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Cargando gráficos de tendencias...</p>
     </div>
   )
 });
 import { 
   TrendingUp, Download, ArrowLeft, Activity, 
-  Sparkles, Calendar, Info, BarChart2, Scale, AlertCircle 
+  Sparkles, Calendar, Info, BarChart2, Scale, AlertCircle,
+  Brain, HeartPulse, Fingerprint
 } from 'lucide-react';
 import { exportarPDF, exportarExcel } from '@/biblioteca/exports';
 
@@ -159,11 +160,14 @@ function TrendsContent() {
 
   if (!patientId) {
     return (
-      <div className="main-content flex flex-col items-center justify-center h-96">
-        <AlertCircle size={48} className="text-zinc-500 mb-4" />
-        <h2 className="text-lg font-bold">Sin paciente seleccionado</h2>
-        <p className="text-sm text-zinc-400 mb-4">Por favor, vuelva al dashboard para seleccionar un paciente.</p>
-        <Link href="/" className="btn btn-primary">Ir al Dashboard</Link>
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 384 }}>
+        <div className="empty-state">
+          <div className="empty-state-ring">
+            <AlertCircle size={24} />
+          </div>
+          <span className="empty-state-text">Por favor, vuelva al dashboard para seleccionar un paciente.</span>
+          <Link href="/" className="btn btn-primary">Ir al Dashboard</Link>
+        </div>
       </div>
     );
   }
@@ -239,7 +243,7 @@ function TrendsContent() {
         {patient && (
           <div className="flex flex-col items-end">
             <h1 className="text-xl font-bold">{patient.name}</h1>
-            <span className="text-xs text-zinc-400 font-mono">ID Paciente: {patient.id.slice(0, 8)}...</span>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>ID Paciente: {patient.id.slice(0, 8)}...</span>
           </div>
         )}
 
@@ -264,7 +268,7 @@ function TrendsContent() {
             <select
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
-              className="input-text text-zinc-300 py-1.5"
+              className="input-text py-1.5"
             >
               <option value="CEJA">Cejas</option>
               <option value="BOCA">Comisura Labial</option>
@@ -277,93 +281,182 @@ function TrendsContent() {
             <select
               value={selectedLado}
               onChange={(e) => setSelectedLado(e.target.value)}
-              className="input-text text-zinc-300 py-1.5"
+              className="input-text py-1.5"
             >
               <option value="DERECHA">Derecha</option>
               <option value="IZQUIERDA">Izquierda</option>
             </select>
           </div>
 
-          <div className="p-3.5 bg-zinc-950/20 border border-zinc-800/40 rounded-lg flex gap-3 text-zinc-400 mt-2">
-            <Info size={28} className="text-indigo-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] leading-relaxed">
-              Seleccione la región y el lado correspondientes para comparar visualmente la evolución de las sesiones de medición **PRE** y **POST** (efecto de la administración de L-DOPA).
-            </p>
+          <div className="info-banner" style={{ marginTop: 8 }}>
+            <Info size={16} style={{ color: 'var(--info)', flexShrink: 0, marginTop: 1 }} />
+            <span>
+              Seleccione la región y el lado correspondientes para comparar visualmente la evolución de las sesiones de medición PRE y POST (efecto de la administración de L-DOPA).
+            </span>
           </div>
         </div>
 
         {/* Right: Evolution Comparison Stats */}
         <div className="lg:col-span-2 card grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-3 pb-2 border-b border-zinc-800/60">
-            <h3 className="text-md font-bold flex items-center gap-2">
-              <Scale size={18} className="text-indigo-400" /> Comparativa Farmacológica (Efecto L-Dopa)
+          <div style={{ gridColumn: '1 / -1', paddingBottom: 8, borderBottom: '1px solid var(--border-card)' }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Scale size={16} style={{ color: 'var(--info)' }} /> Comparativa Farmacológica (Efecto L-Dopa)
             </h3>
-            <span className="text-[10px] text-zinc-500">Última medición registrada contra línea base.</span>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Última medición registrada contra línea base.</span>
           </div>
 
           {/* ROM Difference */}
-          <div className="flex flex-col gap-1.5 justify-center">
-            <span className="text-xs text-zinc-500 block uppercase font-bold tracking-wider">Rango Movimiento (ROM)</span>
-            <div className="flex items-baseline gap-2">
-              <span className={`text-xl font-bold font-mono ${romDiffAbs >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                {romDiffAbs >= 0 ? `+${romDiffAbs.toFixed(1)}°` : `${romDiffAbs.toFixed(1)}°`}
+          <div className="stat-card">
+            <span className="stat-card-label">Rango Movimiento (ROM)</span>
+            <div className="stat-card-value">
+              <span style={{ color: romDiffAbs >= 0 ? 'var(--accent)' : 'var(--warning)' }}>
+                {romDiffAbs >= 0 ? `+${romDiffAbs.toFixed(1)}` : `${romDiffAbs.toFixed(1)}`}
               </span>
-              <span className="text-xs text-zinc-400">({romDiffPct >= 0 ? `+${romDiffPct.toFixed(1)}%` : `${romDiffPct.toFixed(1)}%`})</span>
+              <span className="unit">°</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                ({romDiffPct >= 0 ? `+${romDiffPct.toFixed(1)}%` : `${romDiffPct.toFixed(1)}%`})
+              </span>
             </div>
-            <span className="text-[10px] text-zinc-400 leading-normal">
+            <span className="stat-card-context">
               {romDiffAbs >= 0 ? 'Mejora en la movilidad facial.' : 'Disminución del rango activo.'}
             </span>
           </div>
 
           {/* Velocity Difference */}
-          <div className="flex flex-col gap-1.5 justify-center">
-            <span className="text-xs text-zinc-500 block uppercase font-bold tracking-wider">Velocidad Máxima</span>
-            <div className="flex items-baseline gap-2">
-              <span className={`text-xl font-bold font-mono ${velDiffAbs >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                {velDiffAbs >= 0 ? `+${velDiffAbs.toFixed(1)}°/s` : `${velDiffAbs.toFixed(1)}°/s`}
+          <div className="stat-card">
+            <span className="stat-card-label">Velocidad Máxima</span>
+            <div className="stat-card-value">
+              <span style={{ color: velDiffAbs >= 0 ? 'var(--accent)' : 'var(--warning)' }}>
+                {velDiffAbs >= 0 ? `+${velDiffAbs.toFixed(1)}` : `${velDiffAbs.toFixed(1)}`}
               </span>
-              <span className="text-xs text-zinc-400">({velDiffPct >= 0 ? `+${velDiffPct.toFixed(1)}%` : `${velDiffPct.toFixed(1)}%`})</span>
+              <span className="unit">°/s</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                ({velDiffPct >= 0 ? `+${velDiffPct.toFixed(1)}%` : `${velDiffPct.toFixed(1)}%`})
+              </span>
             </div>
-            <span className="text-[10px] text-zinc-400 leading-normal">
+            <span className="stat-card-context">
               {velDiffAbs >= 0 ? 'Mayor agilidad en la contracción.' : 'Movimiento más lento/rígido.'}
             </span>
           </div>
 
           {/* Tremor Difference */}
-          <div className="flex flex-col gap-1.5 justify-center">
-            <span className="text-xs text-zinc-500 block uppercase font-bold tracking-wider">Amplitud Temblor</span>
-            <span className={`text-xl font-bold font-mono ${tremorDiffAbs <= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {tremorDiffAbs <= 0 ? `${tremorDiffAbs.toFixed(1)}°` : `+${tremorDiffAbs.toFixed(1)}°`}
-            </span>
-            <span className="text-[10px] text-zinc-400 leading-normal">
+          <div className="stat-card">
+            <span className="stat-card-label">Amplitud Temblor</span>
+            <div className="stat-card-value">
+              <span style={{ color: tremorDiffAbs <= 0 ? 'var(--accent)' : 'var(--danger)' }}>
+                {tremorDiffAbs <= 0 ? `${tremorDiffAbs.toFixed(1)}` : `+${tremorDiffAbs.toFixed(1)}`}
+              </span>
+              <span className="unit">°</span>
+            </div>
+            <span className="stat-card-context">
               {tremorDiffAbs <= 0 ? 'Reducción o estabilidad del temblor.' : 'Incremento en oscilaciones involuntarias.'}
             </span>
+          </div>
+        </div>
+
+        {/* Additional Clinical Metrics */}
+        <div className="lg:col-span-2 card" style={{ borderColor: 'var(--info-border)' }}>
+          <div style={{ gridColumn: '1 / -1', paddingBottom: 8, borderBottom: '1px solid var(--border-card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Brain size={16} style={{ color: 'var(--info)' }} /> Métricas Clínicas Adicionales
+            </h3>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Derivado de última sesión PRE/POST</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {/* UPDRS Estimado */}
+            <div className="stat-card">
+              <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <HeartPulse size={12} style={{ color: 'var(--info)' }} /> UPDRS Estimado
+              </span>
+              <div className="stat-card-value">
+                <span style={{ color: preRom < 25 || (preSession?.velocidad_max ?? 0) < 50 ? 'var(--danger)' : preRom < 35 ? 'var(--warning)' : 'var(--accent)' }}>
+                  {(() => {
+                    const romScore = preRom < 20 ? 3 : preRom < 30 ? 2 : preRom < 40 ? 1 : 0;
+                    const velScore = (preSession?.velocidad_max ?? 0) < 40 ? 3 : (preSession?.velocidad_max ?? 0) < 70 ? 2 : (preSession?.velocidad_max ?? 0) < 90 ? 1 : 0;
+                    const tremorScore = (preSession?.frecuencia_temblor ?? 0) > 4 ? 2 : (preSession?.frecuencia_temblor ?? 0) > 0 ? 1 : 0;
+                    const total = romScore + velScore + tremorScore;
+                    return total;
+                  })()}
+                </span>
+                <span className="unit">/9</span>
+              </div>
+              <span className="stat-card-context">
+                {(() => {
+                  const romScore = preRom < 20 ? 3 : preRom < 30 ? 2 : preRom < 40 ? 1 : 0;
+                  const velScore = (preSession?.velocidad_max ?? 0) < 40 ? 3 : (preSession?.velocidad_max ?? 0) < 70 ? 2 : (preSession?.velocidad_max ?? 0) < 90 ? 1 : 0;
+                  const tremorScore = (preSession?.frecuencia_temblor ?? 0) > 4 ? 2 : (preSession?.frecuencia_temblor ?? 0) > 0 ? 1 : 0;
+                  const total = romScore + velScore + tremorScore;
+                  return total <= 2 ? 'Leve' : total <= 5 ? 'Moderado' : 'Severo';
+                })()}
+              </span>
+            </div>
+
+            {/* Índice de Asimetría */}
+            <div className="stat-card">
+              <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Fingerprint size={12} style={{ color: 'var(--info)' }} /> Índice de Asimetría
+              </span>
+              <div className="stat-card-value">
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {preSession?.asimetria_index !== null && preSession?.asimetria_index !== undefined
+                    ? `${preSession.asimetria_index.toFixed(1)}`
+                    : '—'}
+                </span>
+                <span className="unit">%</span>
+              </div>
+              <span className="stat-card-context">
+                {preSession?.asimetria_index !== null && preSession?.asimetria_index !== undefined
+                  ? (preSession.asimetria_index < 15 ? 'Simetría conservada' : 'Asimetría significativa')
+                  : 'Requiere medición bilateral'}
+              </span>
+            </div>
+
+            {/* Clasificación del Temblor */}
+            <div className="stat-card">
+              <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Activity size={12} style={{ color: 'var(--info)' }} /> Clasificación Temblor
+              </span>
+              <div className="stat-card-value">
+                <span style={{ color: !preSession?.frecuencia_temblor ? 'var(--accent)' : (preSession?.frecuencia_temblor ?? 0) >= 3.5 && (preSession?.frecuencia_temblor ?? 0) <= 6.5 ? 'var(--warning)' : 'var(--info)' }}>
+                  {!preSession?.frecuencia_temblor || preSession.frecuencia_temblor === 0
+                    ? 'Ausente'
+                    : (preSession.frecuencia_temblor >= 3.5 && preSession.frecuencia_temblor <= 6.5)
+                      ? 'Reposo'
+                      : 'Acción'}
+                </span>
+              </div>
+              <span className="stat-card-context">
+                {preSession?.frecuencia_temblor && preSession.frecuencia_temblor > 0
+                  ? `${preSession.frecuencia_temblor} Hz — ${preSession.frecuencia_temblor >= 3.5 && preSession.frecuencia_temblor <= 6.5 ? 'Temblor parkinsoniano clásico' : 'Temblor no parkinsoniano'}`
+                  : 'Sin actividad tremórica detectada'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Longitudinal Charts Panel */}
-      <div className="card border-zinc-800/70 p-6 flex flex-col gap-6">
-        <div className="flex justify-between items-center pb-3 border-b border-zinc-800/50">
-          <h3 className="text-md font-bold flex items-center gap-2">
-            <BarChart2 size={20} className="text-emerald-400" /> Tendencias del Paciente
-          </h3>
-          <span className="text-[11px] font-mono text-zinc-500">
+      <div className="card">
+        <div className="section-header">
+          <BarChart2 size={15} style={{ color: 'var(--accent)' }} />
+          Tendencias del Paciente
+          <span style={{ marginLeft: 'auto', fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
             Filtro: {selectedRegion} - LADO {selectedLado}
           </span>
         </div>
 
         {activeSessions.length > 0 ? (
-          <div className="w-full">
+          <div>
             <LongitudinalCharts chartData={chartData} />
           </div>
         ) : (
-          <div className="h-64 flex flex-col items-center justify-center text-center p-6">
-            <AlertCircle size={36} className="text-zinc-600 mb-2" />
-            <h4 className="text-zinc-300 font-semibold text-sm">Sin datos para graficar</h4>
-            <p className="text-xs text-zinc-500 max-w-sm mt-1">
+          <div className="empty-state">
+            <div className="empty-state-ring">
+              <BarChart2 size={20} />
+            </div>
+            <span className="empty-state-text">
               No se han registrado suficientes sesiones para la región {selectedRegion} y lado {selectedLado}. Realice más mediciones.
-            </p>
+            </span>
           </div>
         )}
       </div>
@@ -375,8 +468,8 @@ export function TrendsView() {
   return (
     <Suspense fallback={
       <div className="main-content flex flex-col items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500 mb-4" />
-        <p className="text-zinc-400 text-sm">Cargando módulo de tendencias...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 mb-4" style={{ borderColor: 'var(--accent)' }} />
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Cargando módulo de tendencias...</p>
       </div>
     }>
       <TrendsContent />

@@ -33,11 +33,10 @@ export function NuevoPacienteModal({ isOpen, onClose, onCreate }: NuevoPacienteM
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid var(--border-card)' }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <UserPlus size={16} style={{ color: 'var(--accent)' }} /> Registrar Nuevo Paciente
-          </h3>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+        <div className="section-header">
+          <UserPlus size={15} style={{ color: 'var(--accent)' }} />
+          Registrar Nuevo Paciente
+          <button onClick={onClose} style={{ marginLeft: 'auto', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
             <X size={16} />
           </button>
         </div>

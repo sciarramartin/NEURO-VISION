@@ -230,7 +230,14 @@ export function DashboardView() {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>No se encontraron pacientes.</td></tr>
+                      <tr><td colSpan={4} style={{ padding: 0, border: 'none' }}>
+                        <div className="empty-state" style={{ border: 'none', borderRadius: 0 }}>
+                          <div className="empty-state-ring">
+                            <Search size={20} />
+                          </div>
+                          <span className="empty-state-text">No se encontraron pacientes.</span>
+                        </div>
+                      </td></tr>
                     )}
                   </tbody>
                 </table>
@@ -276,8 +283,11 @@ export function DashboardView() {
                     </div>
                   );
                 }) : (
-                  <div className="card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No hay mediciones registradas.
+                  <div className="empty-state" style={{ border: '1px dashed var(--border-card)' }}>
+                    <div className="empty-state-ring">
+                      <FileText size={20} />
+                    </div>
+                    <span className="empty-state-text">No hay mediciones registradas.</span>
                   </div>
                 )}
               </div>
@@ -357,7 +367,14 @@ export function DashboardView() {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>Aún no hay sesiones registradas.</td></tr>
+                    <tr><td colSpan={6} style={{ padding: 0, border: 'none' }}>
+                      <div className="empty-state" style={{ border: 'none', borderRadius: 0 }}>
+                        <div className="empty-state-ring">
+                          <FileText size={20} />
+                        </div>
+                        <span className="empty-state-text">Aún no hay sesiones registradas.</span>
+                      </div>
+                    </td></tr>
                   )}
                 </tbody>
               </table>

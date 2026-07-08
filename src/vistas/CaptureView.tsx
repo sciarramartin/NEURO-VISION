@@ -18,9 +18,9 @@ import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
 const WebcamCapture = dynamic(() => import('@/componentes_visuales/WebcamCapture'), { ssr: false });
 
 const QUALITY_CONFIG: Record<string, { bg: string; color: string; dot: string; label: string }> = {
-  excelente: { bg: '#0A2E1A', color: '#10B981', dot: '#10B981', label: 'Tracking: Excelente' },
-  degradado: { bg: '#2E1A0A', color: '#F59E0B', dot: '#F59E0B', label: 'Tracking: Degradado' },
-  perdido: { bg: '#2E0A0A', color: '#EF4444', dot: '#EF4444', label: 'Oclusión/Pérdida' }
+  excelente: { bg: 'var(--accent-dim)', color: 'var(--accent)', dot: 'var(--accent)', label: 'Tracking: Excelente' },
+  degradado: { bg: 'var(--warning-dim)', color: 'var(--warning)', dot: 'var(--warning)', label: 'Tracking: Degradado' },
+  perdido: { bg: 'var(--danger-dim)', color: 'var(--danger)', dot: 'var(--danger)', label: 'Oclusión/Pérdida' }
 };
 
 const SLOT_LABELS = ['P1 (Origen)', 'Vértice (Ángulo)', 'P3 (Destino)'];
@@ -210,20 +210,20 @@ export function CaptureView() {
                 <div className="scan-animation" style={{ top: 0 }} />
 
                 <svg width="160" height="180" viewBox="0 0 160 180" fill="none" style={{ opacity: 0.25 }}>
-                  <ellipse cx="80" cy="70" rx="55" ry="65" stroke="#10B981" strokeWidth="1" strokeDasharray="3 3" />
-                  <circle cx="58" cy="62" r="3" fill="#10B981" opacity="0.7" />
-                  <circle cx="102" cy="62" r="3" fill="#10B981" opacity="0.7" />
-                  <circle cx="80" cy="80" r="2" fill="#10B981" opacity="0.5" />
-                  <circle cx="70" cy="96" r="1.5" fill="#10B981" opacity="0.4" />
-                  <circle cx="90" cy="96" r="1.5" fill="#10B981" opacity="0.4" />
-                  <circle cx="80" cy="105" r="2" fill="#10B981" opacity="0.6" />
-                  <circle cx="44" cy="50" r="2" fill="#10B981" opacity="0.3" />
-                  <circle cx="116" cy="50" r="2" fill="#10B981" opacity="0.3" />
-                  <circle cx="52" cy="44" r="1.5" fill="#10B981" opacity="0.25" />
-                  <circle cx="108" cy="44" r="1.5" fill="#10B981" opacity="0.25" />
-                  <circle cx="80" cy="130" r="2" fill="#10B981" opacity="0.4" />
-                  <path d="M62 100 Q80 115 98 100" stroke="#10B981" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.3" />
-                  <path d="M68 50 Q80 44 92 50" stroke="#10B981" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.3" />
+                  <ellipse cx="80" cy="70" rx="55" ry="65" stroke="var(--accent)" strokeWidth="1" strokeDasharray="3 3" />
+                  <circle cx="58" cy="62" r="3" fill="var(--accent)" opacity="0.7" />
+                  <circle cx="102" cy="62" r="3" fill="var(--accent)" opacity="0.7" />
+                  <circle cx="80" cy="80" r="2" fill="var(--accent)" opacity="0.5" />
+                  <circle cx="70" cy="96" r="1.5" fill="var(--accent)" opacity="0.4" />
+                  <circle cx="90" cy="96" r="1.5" fill="var(--accent)" opacity="0.4" />
+                  <circle cx="80" cy="105" r="2" fill="var(--accent)" opacity="0.6" />
+                  <circle cx="44" cy="50" r="2" fill="var(--accent)" opacity="0.3" />
+                  <circle cx="116" cy="50" r="2" fill="var(--accent)" opacity="0.3" />
+                  <circle cx="52" cy="44" r="1.5" fill="var(--accent)" opacity="0.25" />
+                  <circle cx="108" cy="44" r="1.5" fill="var(--accent)" opacity="0.25" />
+                  <circle cx="80" cy="130" r="2" fill="var(--accent)" opacity="0.4" />
+                  <path d="M62 100 Q80 115 98 100" stroke="var(--accent)" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.3" />
+                  <path d="M68 50 Q80 44 92 50" stroke="var(--accent)" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.3" />
                 </svg>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 280 }}>
@@ -280,7 +280,7 @@ export function CaptureView() {
             {isCameraActive && (
               <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
                 <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 700 }}>Zoom: {zoom.toFixed(1)}x</span>
-                <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} style={{ width: 72, accentColor: '#10B981' }} />
+                <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} style={{ width: 72, accentColor: 'var(--accent)' }} />
                 <button onClick={() => setZoom(1)} style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', background: 'transparent', cursor: 'pointer' }}>
                   Reset
                 </button>
@@ -302,7 +302,7 @@ export function CaptureView() {
 
               {isCameraActive && (
                 !isRecording ? (
-                  <button onClick={handleStartRecording} className="btn" style={{ fontSize: 11, padding: '7px 14px', background: '#DC2626', borderColor: '#DC2626', color: '#fff' }}>
+                  <button onClick={handleStartRecording} className="btn" style={{ fontSize: 11, padding: '7px 14px', background: 'var(--danger)', borderColor: 'var(--danger)', color: '#fff' }}>
                     <Circle size={10} fill="currentColor" /> Iniciar Grabación
                   </button>
                 ) : (
