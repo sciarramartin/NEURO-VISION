@@ -802,31 +802,31 @@ export function CaptureView() {
                     label: 'Rango de Movimiento',
                     value: `${calculatedMetrics.angMin}° - ${calculatedMetrics.angMax}°`,
                     color: 'text-zinc-800 dark:text-zinc-200',
-                    tooltip: 'ROM (Range of Motion): diferencia entre el ángulo mínimo y máximo registrado. Un ROM reducido puede indicar rigidez o limitación motora.'
+                    tooltip: 'ROM (Range of Motion): diferencia entre el ángulo mínimo y máximo registrado. Un ROM reducido indica rigidez o limitación. Rango de comparación: > 35° en rostro/cuerpo es normal; valores menores sugieren hipocinesia o rigidez.'
                   },
                   {
                     label: 'Ángulo Promedio',
                     value: `${calculatedMetrics.angAvg}°`,
                     color: 'text-zinc-800 dark:text-zinc-200',
-                    tooltip: 'Promedio de todos los ángulos registrados frame a frame durante la sesión. Representa la posición de reposo funcional.'
+                    tooltip: 'Promedio de todos los ángulos registrados. Representa la posición de reposo funcional. Rango de comparación: varía por región (ceja/párpado: ~120°-160°); sirve como línea base individual de simetría.'
                   },
                   {
                     label: 'Velocidad Máxima',
                     value: `${calculatedMetrics.maxVel}°/s`,
                     color: 'text-indigo-600 dark:text-indigo-400',
-                    tooltip: 'Velocidad angular pico (°/s) calculada por diferencias finitas entre frames consecutivos. Valores bajos pueden indicar bradicinesia.'
+                    tooltip: 'Velocidad angular pico (°/s) calculada por diferencias finitas. Valores bajos sugieren lentitud motora. Rango de comparación: > 90°/s es normal; < 50°/s indica bradicinesia moderada/severa.'
                   },
                   {
                     label: 'Frecuencia Temblor',
                     value: calculatedMetrics.tremorFreq > 0 ? `${calculatedMetrics.tremorFreq} Hz` : 'No detectado',
                     color: 'text-zinc-800 dark:text-zinc-200',
-                    tooltip: 'Frecuencia dominante del temblor detectada por FFT. Rango parkinsoniano típico: 3.5 Hz – 12 Hz. Temblor de reposo: 3–6 Hz. Postural: 5–12 Hz.'
+                    tooltip: 'Frecuencia dominante detectada por FFT. Rango de comparación: 0 Hz es normal (sin temblor). 3.5 - 6.0 Hz indica temblor de reposo parkinsoniano típico; 8.0 - 12.0 Hz indica temblor postural o esencial.'
                   },
                   {
                     label: 'Amplitud Temblor',
                     value: calculatedMetrics.tremorAmp > 0 ? `${calculatedMetrics.tremorAmp}°` : '0°',
                     color: 'text-zinc-800 dark:text-zinc-200',
-                    tooltip: 'Magnitud del temblor en grados, calculada como desviación estándar de la señal filtrada. Refleja la intensidad del temblor involuntario.'
+                    tooltip: 'Magnitud del temblor en grados (desviación estándar de señal filtrada). Rango de comparación: < 0.2° es normal. Valores > 0.5° son clínicamente significativos e indican temblor visible de amplitud moderada.'
                   }
                 ].map(({ label, value, color, tooltip }) => (
                   <div key={label} className="flex justify-between items-center px-3.5 py-2.5 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-150/40 dark:border-zinc-800/50">

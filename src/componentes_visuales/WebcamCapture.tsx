@@ -804,7 +804,7 @@ export default function WebcamCapture({
         </div>
       )}
 
-      <video ref={videoRef} className="hidden" width="640" height="480" playsInline muted />
+      <video ref={videoRef} className="absolute pointer-events-none opacity-0 w-0 h-0" width="640" height="480" playsInline muted />
 
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${loading || errorMsg ? 'hidden' : ''}`}>
         {/* Live Camera Canvas */}
