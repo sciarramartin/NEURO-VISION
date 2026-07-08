@@ -337,7 +337,7 @@ export function useMediaPipe({
                 drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
                 const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
 
-                if (isRecording && startTimeRef.current !== null && currentAngle > 0) {
+                if (isRecording && startTimeRef.current !== null) {
                   const elapsed = (performance.now() - startTimeRef.current) / 1000;
                   recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
                 }
@@ -379,7 +379,7 @@ export function useMediaPipe({
               drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
               const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
 
-              if (isRecording && startTimeRef.current !== null && currentAngle > 0) {
+              if (isRecording && startTimeRef.current !== null) {
                 const elapsed = (performance.now() - startTimeRef.current) / 1000;
                 recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
               }
