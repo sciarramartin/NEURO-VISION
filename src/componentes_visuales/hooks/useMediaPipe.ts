@@ -119,6 +119,14 @@ export function useMediaPipe({
     return { x: px, y: py };
   }, [zoom]);
 
+  // Ref estable para onDataCollected: evita que cambios de referencia
+  // (por re-render del padre) disparen el efecto y reseteen el buffer.
+  const onDataCollectedRef = useRef(onDataCollected);
+  onDataCollectedRef.current = onDataCollected;
+
+  const onTrackingQualityRef = useRef(onTrackingQuality);
+  onTrackingQualityRef.current = onTrackingQuality;
+
   // Recording lifecycle
   useEffect(() => {
     if (isRecording) {
@@ -126,10 +134,10 @@ export function useMediaPipe({
       startTimeRef.current = performance.now();
     } else {
       if (recordingDataRef.current.length > 0) {
-        onDataCollected([...recordingDataRef.current]);
+        onDataCollectedRef.current([...recordingDataRef.current]);
       }
     }
-  }, [isRecording, onDataCollected]);
+  }, [isRecording]);
 
   // Clean on unmount
   useEffect(() => {
@@ -141,7 +149,6 @@ export function useMediaPipe({
 
   // Observer: Quality tracking polling
   useEffect(() => {
-    if (!onTrackingQuality) return;
     if (qualityTimerRef.current) clearInterval(qualityTimerRef.current);
 
     const getActiveIndices = () => {
@@ -154,13 +161,13 @@ export function useMediaPipe({
       if (isMockMode || latestLandmarksRef.current.length === 0) return;
       const activeIndices = getActiveIndices();
       const quality = calcularCalidadTracking(latestLandmarksRef.current, activeIndices);
-      onTrackingQuality(quality);
+      onTrackingQualityRef.current?.(quality);
     }, 1000);
 
     return () => {
       if (qualityTimerRef.current) clearInterval(qualityTimerRef.current);
     };
-  }, [region, lado, landmarksPersonalizados, isMockMode, onTrackingQuality]);
+  }, [region, lado, landmarksPersonalizados, isMockMode]);
 
   // Initialize MediaPipe Models (Facade/Singleton cache)
   useEffect(() => {

@@ -6,9 +6,8 @@ import { useApp } from '@/contexto_global/AppContext';
 import { Session } from '@/biblioteca/types/database';
 import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
 import {
-  Users, Activity, Calendar, Play, FileText, Search,
-  Trash2, UserPlus, TrendingUp, AlertCircle, Info, ChevronRight,
-  HelpCircle
+  Play, FileText, Search,
+  Trash2, UserPlus, TrendingUp, Info
 } from 'lucide-react';
 
 interface PatientSummary {
@@ -151,43 +150,7 @@ export function DashboardView() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            <div className="card" style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
-              <div style={{ padding: 10, background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)' }}>
-                <Users size={20} style={{ color: 'var(--accent)' }} />
-              </div>
-              <div>
-                <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  PACIENTES ACTIVOS
-                  <TooltipAyuda posicion="bottom" texto="Número total de pacientes registrados." />
-                </span>
-                <span className="stat-value">{patients.length}</span>
-              </div>
-            </div>
 
-            <div className="card" style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
-              <div style={{ padding: 10, background: 'var(--info-dim)', border: '1px solid var(--info-border)', borderRadius: 'var(--radius-md)' }}>
-                <Activity size={20} style={{ color: 'var(--info)' }} />
-              </div>
-              <div>
-                <span className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  SESIONES EVALUADAS
-                  <TooltipAyuda posicion="bottom" texto="Suma total de grabaciones realizadas." />
-                </span>
-                <span className="stat-value">{patients.reduce((sum, p) => sum + p.sessions_count, 0)}</span>
-              </div>
-            </div>
-
-            <div className="card" style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
-              <div style={{ padding: 10, background: 'var(--bg-elevated)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)' }}>
-                <Calendar size={20} style={{ color: 'var(--text-secondary)' }} />
-              </div>
-              <div>
-                <span className="stat-label">ÚLTIMA CONEXIÓN</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Hoy, {new Date().toLocaleDateString('es-ES')}</span>
-              </div>
-            </div>
-          </div>
 
           {showAddForm && (
             <div className="card" style={{ borderColor: 'var(--accent-border)' }}>
@@ -248,13 +211,21 @@ export function DashboardView() {
                           )}
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                            <Link href={`/trends?patientId=${p.id}`} className="btn btn-secondary" style={{ fontSize: 10, padding: '5px 10px' }}>
-                              <TrendingUp size={11} /> Análisis
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
+                            <Link href={`/trends?patientId=${p.id}`} className="btn btn-secondary" style={{ fontSize: 10, padding: '5px 8px' }} title="Ver tendencias y gráficos">
+                              <TrendingUp size={11} />
                             </Link>
-                            <Link href={`/capture?patientId=${p.id}`} className="btn btn-primary" style={{ fontSize: 10, padding: '5px 10px' }}>
-                              <Play size={9} fill="currentColor" /> Captura
+                            <Link href={`/capture?patientId=${p.id}`} className="btn btn-primary" style={{ fontSize: 10, padding: '5px 8px' }} title="Nueva sesión de captura">
+                              <Play size={9} fill="currentColor" />
                             </Link>
+                            <button className="btn btn-secondary" style={{ fontSize: 10, padding: '5px 8px' }} title="Editar perfil del paciente"
+                              onClick={() => alert('Editar paciente: ' + p.name + ' - Función en desarrollo')}>
+                              <FileText size={11} />
+                            </button>
+                            <button className="btn btn-secondary" style={{ fontSize: 10, padding: '5px 8px' }} title="Notas clínicas"
+                              onClick={() => alert('Notas clínicas para: ' + p.name + ' - Función en desarrollo')}>
+                              <Info size={11} />
+                            </button>
                           </div>
                         </td>
                       </tr>

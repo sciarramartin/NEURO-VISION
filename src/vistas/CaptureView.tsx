@@ -48,6 +48,7 @@ export function CaptureView() {
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [recordingFeedback, setRecordingFeedback] = useState<{ type: 'warning' | 'info' | 'error'; message: string } | null>(null);
+  const [showResultsModal, setShowResultsModal] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -130,6 +131,7 @@ export function CaptureView() {
       tremorFreq: dominantFrequency > 0 ? parseFloat(dominantFrequency.toFixed(1)) : 0,
       tremorAmp: amplitude > 0 ? parseFloat(amplitude.toFixed(2)) : 0
     });
+    setShowResultsModal(true);
   };
 
   const handleStartRecording = () => {
@@ -137,6 +139,7 @@ export function CaptureView() {
     setCalculatedMetrics(null);
     setCapturedData([]);
     setRecordingFeedback(null);
+    setShowResultsModal(false);
     startRecording();
   };
 
@@ -146,12 +149,13 @@ export function CaptureView() {
     if (!calculatedMetrics) return;
     const success = await saveSession(selectedPatientId, modo, region, lado, capturedData, calculatedMetrics);
     if (success) {
+      setShowResultsModal(false);
       setTimeout(() => { setCalculatedMetrics(null); setCapturedData([]); resetSaveStatus(); }, 2000);
     }
   };
 
   const handleDiscardRecording = () => {
-    if (confirm('¿Descartar esta grabación?')) { setCalculatedMetrics(null); setCapturedData([]); setRecordingFeedback(null); }
+    if (confirm('¿Descartar esta grabación?')) { setCalculatedMetrics(null); setCapturedData([]); setRecordingFeedback(null); setShowResultsModal(false); }
   };
 
   const getTimestamp = () => {
@@ -431,7 +435,7 @@ export function CaptureView() {
             )}
           </div>
 
-          {recordingFeedback ? (
+          {recordingFeedback && (
             <div className="card animate-fade-in" style={{
               padding: 16, gap: 8,
               borderColor: recordingFeedback.type === 'warning' ? 'var(--warning-border)' :
@@ -451,11 +455,18 @@ export function CaptureView() {
                 {recordingFeedback.message}
               </p>
             </div>
-          ) : (
-            <ResultadosCard metrics={calculatedMetrics} saveStatus={saveStatus} onSave={handleSaveSession} onDiscard={handleDiscardRecording} />
           )}
         </div>
       </div>
+
+      {/* ── Resultados Modal Overlay ──────────────────────────────────────── */}
+      {showResultsModal && calculatedMetrics && (
+        <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
+          <div className="modal-content" style={{ maxWidth: 560, maxHeight: '90vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+            <ResultadosCard metrics={calculatedMetrics} saveStatus={saveStatus} onSave={handleSaveSession} onDiscard={handleDiscardRecording} />
+          </div>
+        </div>
+      )}
 
       <div className="status-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
