@@ -26,7 +26,7 @@ interface TooltipAyudaProps {
 export function TooltipAyuda({
   texto,
   posicion = 'top',
-  iconoSize = 13,
+  iconoSize = 18,
   className = ''
 }: TooltipAyudaProps) {
   const [visible, setVisible] = useState(false);
@@ -80,10 +80,10 @@ export function TooltipAyuda({
         <span
           role="tooltip"
           className={`
-            absolute z-50 w-56 px-3 py-2
+            absolute z-50 w-72 px-4 py-2.5
             bg-zinc-900 border border-zinc-700
             rounded-lg shadow-xl
-            text-xs text-zinc-300 leading-relaxed
+            text-[13px] text-zinc-300 leading-relaxed
             pointer-events-none
             ${positionClasses[posicion]}
           `}

@@ -358,63 +358,7 @@ export function CaptureView() {
         </div>
       </div>
 
-      {/* ━━ STEP WIZARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="flex items-center gap-0">
-        {[
-          {
-            num: 1,
-            label: 'Configurar Sesión',
-            sub: 'Paciente, región y fármaco',
-            done: !!selectedPatientId,
-            active: !isCameraActive
-          },
-          {
-            num: 2,
-            label: 'Activar Cámara',
-            sub: 'Posicionar al paciente',
-            done: isCameraActive,
-            active: isCameraActive && !isRecording
-          },
-          {
-            num: 3,
-            label: 'Grabar y Guardar',
-            sub: 'Iniciar medición',
-            done: !!calculatedMetrics,
-            active: isRecording
-          }
-        ].map((step, i) => (
-          <React.Fragment key={step.num}>
-            <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg transition-all ${
-              step.done
-                ? 'bg-emerald-950/20 border border-emerald-900/30'
-                : step.active
-                  ? 'bg-indigo-950/30 border border-indigo-800/40'
-                  : 'bg-zinc-900/40 border border-zinc-800/30'
-            }`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                step.done
-                  ? 'bg-emerald-500 text-black'
-                  : step.active
-                    ? 'bg-indigo-500 text-white'
-                    : 'bg-zinc-800 text-zinc-500'
-              }`}>
-                {step.done ? '✓' : step.num}
-              </span>
-              <div className="hidden sm:block">
-                <p className={`text-xs font-semibold leading-none ${
-                  step.done ? 'text-emerald-400' : step.active ? 'text-indigo-300' : 'text-zinc-500'
-                }`}>{step.label}</p>
-                <p className="text-[10px] text-zinc-600 mt-0.5">{step.sub}</p>
-              </div>
-            </div>
-            {i < 2 && (
-              <div className={`h-px flex-1 mx-1 transition-all ${
-                step.done ? 'bg-emerald-900/50' : 'bg-zinc-800/50'
-              }`} />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ── Left: Camera ─────────────────────────────────────────────────── */}
@@ -545,32 +489,7 @@ export function CaptureView() {
 
           {/* Controls bar */}
           <div className="card p-5 flex flex-wrap justify-between items-center gap-4">
-            {/* Pre-recording session summary badge */}
-            {!isRecording && isCameraActive && (
-              <div className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900/60 border border-zinc-800/30 text-[11px]">
-                <span className="text-zinc-600 font-bold uppercase tracking-wider shrink-0">Configuración actual:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2 py-0.5 bg-indigo-950/40 border border-indigo-800/30 text-indigo-300 rounded font-semibold">
-                    {patients.find(p => p.id === selectedPatientId)?.name ?? '—'}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded font-semibold border ${
-                    modo === 'PRE'
-                      ? 'bg-amber-950/30 border-amber-800/30 text-amber-400'
-                      : 'bg-emerald-950/30 border-emerald-800/30 text-emerald-400'
-                  }`}>
-                    {modo}
-                  </span>
-                  <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-700 text-zinc-300 rounded font-semibold font-mono">
-                    {region} / {lado}
-                  </span>
-                  {landmarksPersonalizados && (
-                    <span className="px-2 py-0.5 bg-amber-950/30 border border-amber-800/30 text-amber-400 rounded font-mono">
-                      ✶ Puntos custom
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+
 
             <div className="flex gap-2">
               {!isCameraActive ? (
@@ -610,14 +529,14 @@ export function CaptureView() {
                   texto="Simulado: usa datos pre-grabados sin cámara. Real: usa la webcam y visión por computadora con MediaPipe."
                 />
               </span>
-              <div className="flex border border-zinc-800 rounded overflow-hidden bg-zinc-950 max-w-[280px]">
+              <div className="flex border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-950 p-0.5 max-w-[280px]">
                 <button
                   onClick={() => !isRecording && setIsMockMode(true)}
                   disabled={isRecording}
-                  className={`flex-1 text-[11px] font-bold py-1.5 px-3 transition-all ${
+                  className={`flex-1 text-[11px] font-bold py-1.5 px-3 rounded-md transition-all ${
                     isMockMode
-                      ? 'bg-amber-950/30 text-amber-400 border-r border-zinc-800/40'
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 font-extrabold shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                   }`}
                 >
                   Simulado
@@ -625,10 +544,10 @@ export function CaptureView() {
                 <button
                   onClick={() => !isRecording && setIsMockMode(false)}
                   disabled={isRecording}
-                  className={`flex-1 text-[11px] font-bold py-1.5 px-3 transition-all ${
+                  className={`flex-1 text-[11px] font-bold py-1.5 px-3 rounded-md transition-all ${
                     !isMockMode
-                      ? 'bg-emerald-950/30 text-emerald-400 border-l border-zinc-800/40'
-                      : 'text-zinc-500 hover:text-zinc-300'
+                      ? 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-extrabold shadow-sm'
+                      : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                   }`}
                 >
                   Cámara Real
@@ -685,13 +604,29 @@ export function CaptureView() {
                     texto="Indique si la evaluación se realiza ANTES (PRE) o DESPUÉS (POST) de la administración de Levodopa. Esta distinción es fundamental para comparar la eficacia farmacológica del tratamiento en el tiempo."
                   />
                 </label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <button onClick={() => setModo('PRE')}
-                    className={`btn text-xs py-2 ${modo === 'PRE' ? 'bg-amber-950/20 border-amber-900 text-amber-400' : 'btn-secondary text-zinc-400'}`}
-                    disabled={isRecording}>PRE (Antes de L-Dopa)</button>
-                  <button onClick={() => setModo('POST')}
-                    className={`btn text-xs py-2 ${modo === 'POST' ? 'bg-emerald-950/20 border-emerald-900 text-emerald-400' : 'btn-secondary text-zinc-400'}`}
-                    disabled={isRecording}>POST (Después de L-Dopa)</button>
+                <div className="flex border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-950 p-0.5 mt-1">
+                  <button
+                    onClick={() => setModo('PRE')}
+                    disabled={isRecording}
+                    className={`flex-1 text-[11px] font-bold py-1.5 px-3 rounded-md transition-all ${
+                      modo === 'PRE'
+                        ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 font-extrabold shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    }`}
+                  >
+                    PRE (Antes de L-Dopa)
+                  </button>
+                  <button
+                    onClick={() => setModo('POST')}
+                    disabled={isRecording}
+                    className={`flex-1 text-[11px] font-bold py-1.5 px-3 rounded-md transition-all ${
+                      modo === 'POST'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-extrabold shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    }`}
+                  >
+                    POST (Después de L-Dopa)
+                  </button>
                 </div>
               </div>
 
@@ -704,22 +639,29 @@ export function CaptureView() {
                     texto="Seleccione el área anatómica a analizar. El sistema calcula el ángulo articular usando landmarks de MediaPipe Face Mesh (rostro) o Pose (cuerpo). Cada región tiene índices de landmark predefinidos que pueden ajustarse con el Ajuste Fino."
                   />
                 </label>
-                <div className="grid grid-cols-4 gap-1.5 mt-1">
-                  {REGION_BOTONES.map(({ key, icono, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => handleRegionChange(key)}
-                      disabled={isRecording}
-                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border text-[10px] font-semibold transition-all ${
-                        region === key
-                          ? 'bg-indigo-950/40 border-indigo-600/60 text-indigo-300 ring-1 ring-indigo-500/30'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400'
-                      }`}
-                    >
-                      <span className="text-lg leading-none">{icono}</span>
-                      <span>{label}</span>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-1.5 mt-1">
+                  {REGION_BOTONES.map(({ key, icono, label }, i) => {
+                    const isLast = i === REGION_BOTONES.length - 1;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => handleRegionChange(key)}
+                        disabled={isRecording}
+                        className={`flex items-center justify-center rounded-lg border text-[11px] font-semibold transition-all ${
+                          region === key
+                            ? 'bg-indigo-100 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-600/60 text-indigo-600 dark:text-indigo-300 ring-1 ring-indigo-500/30'
+                            : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-400'
+                        } ${
+                          isLast
+                            ? 'col-span-3 flex-row h-10 gap-2 py-1 px-3'
+                            : 'flex-col gap-1 py-2.5 px-1 h-16'
+                        }`}
+                      >
+                        <span className="text-lg leading-none shrink-0">{icono}</span>
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -732,10 +674,18 @@ export function CaptureView() {
                     texto="Evalúe ambos lados del rostro en sesiones separadas para calcular el Índice de Asimetría bilateral. Un índice > 20% puede indicar paresia facial."
                   />
                 </label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
+                <div className="flex border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-950 p-0.5 mt-1">
                   {(['DERECHA', 'IZQUIERDA'] as LadoKey[]).map(l => (
-                    <button key={l} onClick={() => setLado(l)} disabled={isRecording}
-                      className={`btn text-xs py-2 ${lado === l ? 'bg-indigo-950/30 border-indigo-700 text-indigo-300' : 'btn-secondary text-zinc-400'}`}>
+                    <button
+                      key={l}
+                      onClick={() => setLado(l)}
+                      disabled={isRecording}
+                      className={`flex-1 text-[11px] font-bold py-1.5 px-3 rounded-md transition-all ${
+                        lado === l
+                          ? 'bg-indigo-100 dark:bg-indigo-950/30 text-indigo-655 dark:text-indigo-300 font-extrabold shadow-sm'
+                          : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                      }`}
+                    >
                       {l === 'DERECHA' ? '→ Derecha' : '← Izquierda'}
                     </button>
                   ))}
@@ -746,13 +696,13 @@ export function CaptureView() {
               <div className="border border-zinc-800 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setPanelAjusteAbierto(!panelAjusteAbierto)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/40 transition-all"
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/40 transition-all"
                 >
                   <span className="flex items-center gap-2">
-                    <Crosshair size={13} className="text-amber-400" />
+                    <Crosshair size={16} className="text-amber-400" />
                     Ajuste Fino de Landmarks
                     {landmarksPersonalizados && (
-                      <span className="ml-1 text-[10px] bg-amber-950/40 border border-amber-800/40 text-amber-400 px-1.5 py-0.5 rounded font-mono">
+                      <span className="ml-1 text-xs bg-amber-950/40 border border-amber-800/40 text-amber-400 px-2.5 py-1 rounded font-mono">
                         ACTIVO
                       </span>
                     )}
@@ -761,37 +711,37 @@ export function CaptureView() {
                 </button>
 
                 {panelAjusteAbierto && (
-                  <div className="px-3 pb-3 flex flex-col gap-3 border-t border-zinc-800 pt-3">
+                  <div className="px-4 pb-4 flex flex-col gap-3 border-t border-zinc-800 pt-3">
                     {/* Default indices reference */}
-                    <p className="text-[10px] text-zinc-500">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
                       Defaults de <span className="text-indigo-400 font-mono">{region}/{lado}</span>:{' '}
                       <span className="font-mono text-zinc-400">[{defaultIndices.join(', ')}]</span>
                     </p>
 
                     {/* Toggle selection mode */}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-400">Modo click sobre canvas</span>
+                      <span className="text-sm text-zinc-500 dark:text-zinc-300">Modo click sobre canvas</span>
                       <button
                         onClick={() => setModoSeleccionActivo(!modoSeleccionActivo)}
                         disabled={isRecording || isMockMode}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-semibold border transition-all ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border transition-all ${
                           modoSeleccionActivo
                             ? 'bg-amber-950/30 border-amber-700/50 text-amber-400'
                             : 'bg-zinc-900 border-zinc-700 text-zinc-500 hover:text-zinc-400'
                         }`}
                         title={isMockMode ? 'Requiere cámara real' : ''}
                       >
-                        {modoSeleccionActivo ? <Eye size={11} /> : <EyeOff size={11} />}
+                        {modoSeleccionActivo ? <Eye size={12} /> : <EyeOff size={12} />}
                         {modoSeleccionActivo ? 'Activo' : 'Inactivo'}
                       </button>
                     </div>
 
                     {isMockMode && (
-                      <p className="text-[10px] text-amber-600">⚠ Requiere cámara real (desactivar modo simulado)</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500">⚠ Requiere cámara real (desactivar modo simulado)</p>
                     )}
 
                     {modoSeleccionActivo && (
-                      <p className="text-[10px] text-zinc-500 italic">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
                         Haga click sobre el rostro en el canvas para asignar los puntos P1, Vértice y P3.
                       </p>
                     )}
@@ -799,17 +749,17 @@ export function CaptureView() {
                     {/* Slot status */}
                     <div className="flex flex-col gap-1.5">
                       {SLOT_LABELS.map((label, i) => (
-                        <div key={i} className="flex items-center justify-between bg-zinc-900/60 rounded-lg px-2.5 py-1.5">
+                        <div key={i} className="flex items-center justify-between bg-zinc-900/60 rounded-lg px-3 py-2">
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: SLOT_COLORES[i] }} />
-                            <span className="text-[11px] text-zinc-400">{label}</span>
+                            <span className="text-xs text-zinc-650 dark:text-zinc-300">{label}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-mono" style={{ color: SLOT_COLORES[i] }}>
+                            <span className="text-xs font-mono" style={{ color: SLOT_COLORES[i] }}>
                               {slotsPersonalizados[i] !== null ? `#${slotsPersonalizados[i]}` : <span className="text-zinc-600">—</span>}
                             </span>
                             {slotsPersonalizados[i] !== null && (
-                              <button onClick={() => handleResetSlot(i)} className="text-zinc-600 hover:text-red-400 transition-colors text-xs">✕</button>
+                              <button onClick={() => handleResetSlot(i)} className="text-zinc-600 hover:text-red-400 transition-colors text-sm font-bold">✕</button>
                             )}
                           </div>
                         </div>
@@ -819,9 +769,9 @@ export function CaptureView() {
                     {/* Reset all */}
                     <button
                       onClick={handleResetAllSlots}
-                      className="btn btn-secondary text-xs py-1.5 flex items-center justify-center gap-1.5 hover:text-red-400 transition-colors"
+                      className="btn btn-secondary text-sm py-2 flex items-center justify-center gap-2 hover:text-red-400 transition-colors"
                     >
-                      <RotateCcw size={12} /> Resetear a defaults
+                      <RotateCcw size={15} /> Resetear a defaults
                     </button>
                   </div>
                 )}
@@ -851,40 +801,40 @@ export function CaptureView() {
                   {
                     label: 'Rango de Movimiento',
                     value: `${calculatedMetrics.angMin}° - ${calculatedMetrics.angMax}°`,
-                    color: 'text-zinc-200',
+                    color: 'text-zinc-800 dark:text-zinc-200',
                     tooltip: 'ROM (Range of Motion): diferencia entre el ángulo mínimo y máximo registrado. Un ROM reducido puede indicar rigidez o limitación motora.'
                   },
                   {
                     label: 'Ángulo Promedio',
                     value: `${calculatedMetrics.angAvg}°`,
-                    color: 'text-zinc-200',
+                    color: 'text-zinc-800 dark:text-zinc-200',
                     tooltip: 'Promedio de todos los ángulos registrados frame a frame durante la sesión. Representa la posición de reposo funcional.'
                   },
                   {
                     label: 'Velocidad Máxima',
                     value: `${calculatedMetrics.maxVel}°/s`,
-                    color: 'text-indigo-400',
+                    color: 'text-indigo-600 dark:text-indigo-400',
                     tooltip: 'Velocidad angular pico (°/s) calculada por diferencias finitas entre frames consecutivos. Valores bajos pueden indicar bradicinesia.'
                   },
                   {
                     label: 'Frecuencia Temblor',
                     value: calculatedMetrics.tremorFreq > 0 ? `${calculatedMetrics.tremorFreq} Hz` : 'No detectado',
-                    color: 'text-zinc-200',
+                    color: 'text-zinc-800 dark:text-zinc-200',
                     tooltip: 'Frecuencia dominante del temblor detectada por FFT. Rango parkinsoniano típico: 3.5 Hz – 12 Hz. Temblor de reposo: 3–6 Hz. Postural: 5–12 Hz.'
                   },
                   {
                     label: 'Amplitud Temblor',
                     value: calculatedMetrics.tremorAmp > 0 ? `${calculatedMetrics.tremorAmp}°` : '0°',
-                    color: 'text-zinc-200',
+                    color: 'text-zinc-800 dark:text-zinc-200',
                     tooltip: 'Magnitud del temblor en grados, calculada como desviación estándar de la señal filtrada. Refleja la intensidad del temblor involuntario.'
                   }
-                ].map(({ label, value, color, tooltip }, i, arr) => (
-                  <div key={label} className={`flex justify-between items-center py-1 ${i < arr.length - 1 ? 'border-b border-zinc-800/50' : ''}`}>
-                    <span className="flex items-center gap-1 text-xs text-zinc-400">
+                ].map(({ label, value, color, tooltip }) => (
+                  <div key={label} className="flex justify-between items-center px-3.5 py-2.5 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-150/40 dark:border-zinc-800/50">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-550 dark:text-zinc-400">
                       {label}
-                      <TooltipAyuda texto={tooltip} posicion="left" iconoSize={11} />
+                      <TooltipAyuda texto={tooltip} posicion="left" iconoSize={13} />
                     </span>
-                    <span className={`text-sm font-semibold font-mono ${color}`}>{value}</span>
+                    <span className={`text-[13px] font-bold font-mono ${color}`}>{value}</span>
                   </div>
                 ))}
               </div>

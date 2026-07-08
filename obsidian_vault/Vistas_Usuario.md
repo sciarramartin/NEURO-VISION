@@ -17,13 +17,14 @@ Ubicación del archivo: [DashboardView.tsx](file:///c:/Users/arrai/OneDrive/Docu
 
 ## 📷 CaptureView
 Ubicación del archivo: [CaptureView.tsx](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/CaptureView.tsx)
-*   **Step Wizard (3 pasos):** Barra de progreso visual (Configurar Sesión → Activar Cámara → Grabar y Guardar) que refleja el estado actual del flujo reactivamente (Nielsen #1 Visibility of System Status). Cada paso se colorea en esmeralda cuando se completa, en índigo cuando está activo.
+*   **Diseño Robusto y Simplificado:** Se eliminó el Step Wizard superior y el banner de resumen de configuración actual (anteriormente redundantes) para optimizar el espacio vertical y alinearse con la estética limpia del panel Kanban.
+*   **Controles Segmentados (Pills) Premium:** Los selectores de L-DOPA ("PRE/POST"), Lado Facial ("Derecha/Izquierda") y Modo de Ejecución ("Simulado/Cámara Real") se transformaron en interruptores segmentados cohesivos y fluidos con contenedores de fondo adaptativos (`bg-zinc-100 dark:bg-zinc-950`).
+*   **Grilla Simétrica de Regiones:** La selección de áreas anatómicas se reestructuró a una grilla balanceada de 3 columnas (3 + 3), con la opción de "Hombro" expandida horizontalmente a ancho completo (`col-span-3`) para un equilibrio visual perfecto.
 *   **Estado idle premium de cámara:** Cuando la cámara está apagada, se muestra un placeholder SVG de silueta facial con guías de posicionamiento (iluminación, distancia, encuadre) en lugar de un área negra vacía (Nielsen #1 + #6 Recognition).
-*   **Resumen pre-grabación:** Cuando la cámara está activa pero no grabando, se muestra una barra de confirmación con la configuración actual: Paciente, PRE/POST, Región/Lado, y si hay puntos personalizados activos. Previene grabaciones con configuración incorrecta (Nielsen #6 Recognition rather than recall).
-*   **Botones de región M1:** Grilla de 7 botones visuales con íconos por región anatómica (reemplazan el dropdown).
-*   **Panel Ajuste Fino (Enfoque C):** Modo click-sobre-canvas para reasignar P1/Vértice/P3 manualmente. Hit-test en [[Algoritmos_Analisis|angles.ts]].
+*   **Panel Ajuste Fino (Enfoque C) mejorado:** Modo click-sobre-canvas para reasignar P1/Vértice/P3 manualmente, con fuentes de tamaño aumentado para mejor legibilidad. Hit-test en [[Algoritmos_Analisis|angles.ts]].
 *   **HUD de tracking (M5):** Badge en tiempo real sobre el canvas (🟢/🟡/🔴) indicando calidad del tracking.
-*   **TooltipAyuda:** Todos los campos del Registro Clínico y las métricas de resultados tienen iconos de ayuda con explicación clínica (Nielsen #10).
+*   **TooltipAyuda robusto:** Todos los campos del Registro Clínico y las métricas de resultados tienen iconos de ayuda de tamaño aumentado (18px) con explicaciones clínicas más grandes al hover (Nielsen #10).
+*   **Tarjetas Modulares de Resultados:** Cada métrica de resultados clínicos se encapsuló en un contenedor individual moderno (`bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-150/40 dark:border-zinc-800/50`) con colores reactivos de alto contraste (`text-zinc-800 dark:text-zinc-200`) garantizando legibilidad en ambos temas (Nielsen #1).
 
 ---
 
