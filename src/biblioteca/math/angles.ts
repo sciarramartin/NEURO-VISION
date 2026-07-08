@@ -134,7 +134,7 @@ export function encontrarLandmarkMasCercano(
  */
 export function calcularCalidadTracking(
   landmarks: LandmarkRaw[],
-  indices: number[]
+  indices: readonly number[]
 ): CalidadTracking {
   if (!landmarks || landmarks.length === 0) return 'perdido';
 

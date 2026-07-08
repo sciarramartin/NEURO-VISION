@@ -17,15 +17,20 @@ Ubicación del archivo: [DashboardView.tsx](file:///c:/Users/arrai/OneDrive/Docu
 
 ## 📷 CaptureView
 Ubicación del archivo: [CaptureView.tsx](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/CaptureView.tsx)
-*   **Diseño Robusto y Simplificado:** Se eliminó el Step Wizard superior y el banner de resumen de configuración actual (anteriormente redundantes) para optimizar el espacio vertical y alinearse con la estética limpia del panel Kanban.
-*   **Controles Segmentados (Pills) Premium:** Los selectores de L-DOPA ("PRE/POST"), Lado Facial ("Derecha/Izquierda") y Modo de Ejecución ("Simulado/Cámara Real") se transformaron en interruptores segmentados cohesivos y fluidos con contenedores de fondo adaptativos (`bg-zinc-100 dark:bg-zinc-950`).
-*   **Grilla Simétrica de Regiones:** La selección de áreas anatómicas se reestructuró a una grilla balanceada de 3 columnas (3 + 3), con la opción de "Hombro" expandida horizontalmente a ancho completo (`col-span-3`) para un equilibrio visual perfecto.
-*   **Flujo de Cámara Real Instantáneo:** Corrección del elemento `<video>` (remplazo de la clase `hidden` por posición off-screen invisible `absolute pointer-events-none opacity-0 w-0 h-0`). Esto garantiza que el stream se active inmediatamente al encender la cámara antes de iniciar la grabación (habilitando el ajuste fino) y asegura el cálculo reactivo de las métricas al detener la grabación.
-*   **Sincronización Total de Temas (Claro/Oscuro):** Se vinculó la clase `.dark` del elemento raíz en el contexto de temas (`ThemeContext`). Ahora, todos los componentes Tailwind que usan utilidades `dark:` cambian de color de forma instantánea al alternar modos, eliminando cualquier falta de contraste.
-*   **Ayuda y Valores Clínicos de Comparación:** Los tooltips de resultados clínicos ahora incluyen explicaciones de rangos normales (ej: ROM > 35°, bradicinesia < 50°/s, temblor típico 3.5 - 6 Hz) para que los médicos entiendan fácilmente si el paciente está por encima o por debajo de los valores fisiológicos estándar.
-*   **Tarjetas Modulares de Resultados:** Cada métrica de resultados clínicos se encapsuló en un contenedor individual moderno (`bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-150/40 dark:border-zinc-800/50`) con colores reactivos de alto contraste (`text-zinc-800 dark:text-zinc-200`) garantizando legibilidad en ambos temas (Nielsen #1).
-*   **Panel Ajuste Fino (Enfoque C) mejorado:** Modo click-sobre-canvas para reasignar P1/Vértice/P3 manualmente, con fuentes de tamaño aumentado para mejor legibilidad. Hit-test en [[Algoritmos_Analisis|angles.ts]].
-*   **HUD de tracking (M5):** Badge en tiempo real sobre el canvas (🟢/🟡/🔴) indicando calidad del tracking.
+*   **Reestructuración y Desacoplamiento Modular:** Se eliminó el código espagueti de `CaptureView` y `WebcamCapture` dividiéndolos en subcomponentes atómicos de presentación:
+    - [RegistroClinicoForm.tsx](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/componentes/RegistroClinicoForm.tsx) (Perfil clínico y selectores).
+    - [ResultadosCard.tsx](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/componentes/ResultadosCard.tsx) (Grilla tabular con columna de Valores Normales).
+    - [NuevoPacienteModal.tsx](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/componentes/NuevoPacienteModal.tsx) (Diálogo modal simplificado).
+*   **Separación de Lógica en Hooks Reactivos (ViewModels):**
+    - [useRecordingState.ts](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/hooks/useRecordingState.ts) (Ciclo de vida de la grabación y cronómetro).
+    - [useCaptureData.ts](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/vistas/hooks/useCaptureData.ts) (Acceso a endpoints y persistencia de base de datos).
+    - [useMediaPipe.ts](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/componentes_visuales/hooks/useMediaPipe.ts) (Ciclo de la cámara web, hit-testing y MediaPipe).
+*   **Pintado 2D Desacoplado (Strategy/Adapter):** Se extrajo todo el pintado en canvas a [canvasDraw.ts](file:///c:/Users/arrai/OneDrive/Documentos/PROYECTO%20NEURO%20VISION/src/biblioteca/rendering/canvasDraw.ts), aislando las funciones puras de trazado de ángulos, skeleton y landmarks.
+*   **Valores de Referencia Fisiológicos (Comparación Directa):** La tabla de resultados incorpora una nueva columna dedicada para "Valor de Referencia (Normal)", permitiendo contrastar el ROM, la velocidad y temblores del paciente de manera inmediata.
+*   **Resolución de Dimensiones de Cámara Real:** Se solucionó el bug del elemento `<video>` en `WebcamCapture` fijando un estilo off-screen absoluto de `640x480` de resolución lógica. Esto previene que Chrome detenga el buffer de decodificación y garantiza mediciones consistentes en producción.
+*   **Ergonomía, Márgenes y Paddings (Anti-Text-to-Border):** Todos los contenedores de tarjetas, botones y celdas tabulares aplican espaciados ergonómicos amplios. Ningún texto o control físico rosa los bordes de su contenedor.
+*   **Diseño Responsivo Móvil:** La disposición de las cámaras se amplió en pantallas anchas para llenar el espacio de trabajo disponible, reorganizándose de manera fluida en una única columna adaptable para teléfonos inteligentes.
+*   **Patrones de Diseño Implementados:** Se aplicaron de forma rigurosa 10 patrones de ingeniería (MVC, Container-Presenter, Repository, Strategy, Factory, Facade, Singleton, Adapter, Observer y Composite), detallados en la skill [[system-architecture-patterns]].
 
 ---
 
