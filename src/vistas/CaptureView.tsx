@@ -279,7 +279,7 @@ export function CaptureView() {
 
             {isCameraActive && (
               <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 700 }}>Zoom: {zoom.toFixed(1)}x</span>
+                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Zoom: {zoom.toFixed(1)}x<TooltipAyuda posicion="top" texto="Zoom digital del canvas. Útil para acercar regiones faciales pequeñas y mejorar la precisión del análisis." /></span>
                 <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} style={{ width: 72, accentColor: 'var(--accent)' }} />
                 <button onClick={() => setZoom(1)} style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-sm)', padding: '2px 6px', background: 'transparent', cursor: 'pointer' }}>
                   Reset
@@ -316,9 +316,10 @@ export function CaptureView() {
             <div style={{ flex: 1 }} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Zap size={10} style={{ color: 'var(--accent)' }} />
                 Modo Ejecución
+                <TooltipAyuda posicion="top" texto="'Simulado': genera datos de prueba sin cámara. 'Cámara Real': captura con webcam para evaluación clínica en vivo." />
               </span>
               <div className="segmented-control" style={{ width: 160 }}>
                 <button onClick={() => !isRecording && setIsMockMode(true)} disabled={isRecording} className={`segmented-option ${isMockMode ? 'active-warning' : ''}`} style={{ fontSize: 10, padding: '4px 8px' }}>
@@ -354,6 +355,7 @@ export function CaptureView() {
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 <Crosshair size={14} style={{ color: 'var(--accent)' }} />
                 Ajuste Fino de Landmarks
+                <TooltipAyuda posicion="top" texto="Personalice manualmente los puntos de referencia (landmarks) de la malla facial para el cálculo de ángulos." />
                 {getCustomLandmarksArray() && (
                   <span style={{ fontSize: 9, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '1px 5px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                     ACTIVO
@@ -376,7 +378,7 @@ export function CaptureView() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid var(--border-card)' }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>Modo click sobre cámara</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>Modo click sobre cámara<TooltipAyuda posicion="top" texto="Active para seleccionar landmarks directamente haciendo clic sobre el canvas de la cámara. Asigne P1, Vértice y P3 manualmente." /></span>
                   <label className="toggle-switch">
                     <input
                       type="checkbox"

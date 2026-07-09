@@ -21,6 +21,7 @@ import {
   Brain, HeartPulse, Fingerprint
 } from 'lucide-react';
 import { exportarPDF, exportarExcel } from '@/biblioteca/exports';
+import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
 
 interface PatientDetail {
   id: string;
@@ -249,10 +250,10 @@ function TrendsContent() {
 
         <div className="flex gap-2 w-full md:w-auto">
           <button onClick={handleExportExcel} className="btn btn-secondary py-2 px-3 text-xs flex-1 md:flex-none">
-            <Download size={14} /> Exportar Excel
+            <Download size={14} /> Exportar Excel <TooltipAyuda posicion="top" texto="Descarga la serie temporal completa de ángulos y velocidades en formato .xlsx para análisis en programas estadísticos." />
           </button>
           <button onClick={handleExportPDF} className="btn btn-primary py-2 px-3 text-xs flex-1 md:flex-none">
-            <Download size={14} /> Exportar Reporte PDF
+            <Download size={14} /> Exportar Reporte PDF <TooltipAyuda posicion="top" texto="Genera un informe clínico profesional en PDF con gráficos, métricas y comparativa PRE vs POST para entregar al paciente." />
           </button>
         </div>
       </div>
@@ -261,10 +262,10 @@ function TrendsContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Metric Configuration (Region, Side) */}
         <div className="lg:col-span-1 card flex flex-col gap-4">
-          <h3 className="text-md font-bold mb-1">Parámetros del Gráfico</h3>
+          <h3 className="text-md font-bold mb-1" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Parámetros del Gráfico<TooltipAyuda posicion="top" texto="Seleccione la región anatómica y el lado para filtrar las sesiones a comparar en los gráficos evolutivos." /></h3>
           
           <div className="form-group mb-0">
-            <label className="form-label">Región Facial</label>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Región Facial<TooltipAyuda posicion="top" texto="Filtre por la región anatómica medida durante las sesiones: cejas, comisura labial o párpados." /></label>
             <select
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
@@ -277,7 +278,7 @@ function TrendsContent() {
           </div>
 
           <div className="form-group mb-0">
-            <label className="form-label">Lado Analizado</label>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Lado Analizado<TooltipAyuda posicion="top" texto="Seleccione el lado (derecho o izquierdo) para visualizar los resultados de forma independiente y detectar asimetrías." /></label>
             <select
               value={selectedLado}
               onChange={(e) => setSelectedLado(e.target.value)}
@@ -301,13 +302,14 @@ function TrendsContent() {
           <div style={{ gridColumn: '1 / -1', paddingBottom: 8, borderBottom: '1px solid var(--border-card)' }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Scale size={16} style={{ color: 'var(--info)' }} /> Comparativa Farmacológica (Efecto L-Dopa)
+              <TooltipAyuda posicion="top" texto="Compara los resultados PRE vs POST administración de Levodopa para cuantificar la respuesta al tratamiento farmacológico." />
             </h3>
             <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Última medición registrada contra línea base.</span>
           </div>
 
           {/* ROM Difference */}
           <div className="stat-card">
-            <span className="stat-card-label">Rango Movimiento (ROM)</span>
+            <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Rango Movimiento (ROM)<TooltipAyuda posicion="top" texto="Diferencia entre el ángulo máximo y mínimo. Un ROM mayor indica mejor movilidad. Valores ≥ 35° se consideran normales en región facial." /></span>
             <div className="stat-card-value">
               <span style={{ color: romDiffAbs >= 0 ? 'var(--accent)' : 'var(--warning)' }}>
                 {romDiffAbs >= 0 ? `+${romDiffAbs.toFixed(1)}` : `${romDiffAbs.toFixed(1)}`}
@@ -324,7 +326,7 @@ function TrendsContent() {
 
           {/* Velocity Difference */}
           <div className="stat-card">
-            <span className="stat-card-label">Velocidad Máxima</span>
+            <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Velocidad Máxima<TooltipAyuda posicion="top" texto="Velocidad angular pico del movimiento en °/s. Una velocidad reducida puede indicar bradicinesia (lentitud), síntoma cardinal del Parkinson." /></span>
             <div className="stat-card-value">
               <span style={{ color: velDiffAbs >= 0 ? 'var(--accent)' : 'var(--warning)' }}>
                 {velDiffAbs >= 0 ? `+${velDiffAbs.toFixed(1)}` : `${velDiffAbs.toFixed(1)}`}
@@ -341,7 +343,7 @@ function TrendsContent() {
 
           {/* Tremor Difference */}
           <div className="stat-card">
-            <span className="stat-card-label">Amplitud Temblor</span>
+            <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Amplitud Temblor<TooltipAyuda posicion="top" texto="Magnitud de la oscilación del temblor en grados. Una reducción POST medicación indica respuesta positiva a Levodopa." /></span>
             <div className="stat-card-value">
               <span style={{ color: tremorDiffAbs <= 0 ? 'var(--accent)' : 'var(--danger)' }}>
                 {tremorDiffAbs <= 0 ? `${tremorDiffAbs.toFixed(1)}` : `+${tremorDiffAbs.toFixed(1)}`}
@@ -359,6 +361,7 @@ function TrendsContent() {
           <div style={{ gridColumn: '1 / -1', paddingBottom: 8, borderBottom: '1px solid var(--border-card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Brain size={16} style={{ color: 'var(--info)' }} /> Métricas Clínicas Adicionales
+              <TooltipAyuda posicion="top" texto="Indicadores clínicos derivados de la última sesión PRE (basal). Incluye estimación UPDRS, asimetría facial y clasificación del temblor." />
             </h3>
             <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Derivado de última sesión PRE/POST</span>
           </div>
@@ -366,7 +369,7 @@ function TrendsContent() {
             {/* UPDRS Estimado */}
             <div className="stat-card">
               <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <HeartPulse size={12} style={{ color: 'var(--info)' }} /> UPDRS Estimado
+                <HeartPulse size={12} style={{ color: 'var(--info)' }} /> UPDRS Estimado<TooltipAyuda posicion="top" texto="Puntaje estimado (0-9) basado en ROM, velocidad y temblor de la sesión PRE. A menor puntaje, mejor función motora. Análogo a la Escala Unificada de Parkinson (UPDRS III)." />
               </span>
               <div className="stat-card-value">
                 <span style={{ color: preRom < 25 || (preSession?.velocidad_max ?? 0) < 50 ? 'var(--danger)' : preRom < 35 ? 'var(--warning)' : 'var(--accent)' }}>
@@ -394,7 +397,7 @@ function TrendsContent() {
             {/* Índice de Asimetría */}
             <div className="stat-card">
               <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Fingerprint size={12} style={{ color: 'var(--info)' }} /> Índice de Asimetría
+                <Fingerprint size={12} style={{ color: 'var(--info)' }} /> Índice de Asimetría<TooltipAyuda posicion="top" texto="Porcentaje de diferencia entre lado derecho e izquierdo. Un índice > 15% indica asimetría clínicamente significativa." />
               </span>
               <div className="stat-card-value">
                 <span style={{ color: 'var(--text-muted)' }}>
@@ -414,7 +417,7 @@ function TrendsContent() {
             {/* Clasificación del Temblor */}
             <div className="stat-card">
               <span className="stat-card-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Activity size={12} style={{ color: 'var(--info)' }} /> Clasificación Temblor
+                <Activity size={12} style={{ color: 'var(--info)' }} /> Clasificación Temblor<TooltipAyuda posicion="top" texto="Clasifica el temblor según su frecuencia: 'Reposo' (3.5-6.5 Hz, típico parkinsoniano) o 'Acción' (> 6.5 Hz, temblor no parkinsoniano)." />
               </span>
               <div className="stat-card-value">
                 <span style={{ color: !preSession?.frecuencia_temblor ? 'var(--accent)' : (preSession?.frecuencia_temblor ?? 0) >= 3.5 && (preSession?.frecuencia_temblor ?? 0) <= 6.5 ? 'var(--warning)' : 'var(--info)' }}>
@@ -440,6 +443,7 @@ function TrendsContent() {
         <div className="section-header">
           <BarChart2 size={15} style={{ color: 'var(--accent)' }} />
           Tendencias del Paciente
+          <TooltipAyuda posicion="top" texto="Gráficos de evolución longitudinal del ROM, velocidad y temblor a lo largo del tiempo con curvas PRE (coral) y POST (cian) superpuestas." />
           <span style={{ marginLeft: 'auto', fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
             Filtro: {selectedRegion} - LADO {selectedLado}
           </span>

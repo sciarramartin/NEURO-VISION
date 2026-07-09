@@ -156,6 +156,7 @@ export function DashboardView() {
             <div className="card" style={{ borderColor: 'var(--accent-border)' }}>
               <h3 style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <UserPlus size={15} style={{ color: 'var(--accent)' }} /> Crear Perfil de Paciente
+                <TooltipAyuda posicion="top" texto="Registre un nuevo paciente ingresando su nombre completo. La fecha de nacimiento puede agregarse después." />
               </h3>
               <form onSubmit={handleAddPatient} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'end' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -173,7 +174,7 @@ export function DashboardView() {
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700 }}>Listado de Pacientes</h3>
+                <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Listado de Pacientes<TooltipAyuda posicion="top" texto="Pacientes registrados en el sistema. Use el buscador para filtrar por nombre." /></h3>
                 <div style={{ position: 'relative', width: 200 }}>
                   <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Buscar paciente..." className="input-text" style={{ padding: '6px 10px 6px 28px', fontSize: 12, width: '100%' }} />
                   <Search size={13} style={{ position: 'absolute', left: 8, top: 8, color: 'var(--text-muted)' }} />
@@ -300,7 +301,7 @@ export function DashboardView() {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Portal del Paciente</h1>
+              <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 4 }}>Portal del Paciente<TooltipAyuda posicion="top" texto="Panel personal del paciente. Consulte el historial de resultados clínicos, evaluaciones y tendencias de sus mediciones." /></h1>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Consulte el historial de sus resultados clínicos.</p>
             </div>
             {patientProfile && (
@@ -329,7 +330,7 @@ export function DashboardView() {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700 }}>Mis Evaluaciones Recientes</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Mis Evaluaciones Recientes<TooltipAyuda posicion="top" texto="Listado de todas las sesiones de evaluación registradas. Cada fila muestra una medición con su estado farmacológico y resultados." /></h3>
             <div className="table-container">
               <table className="custom-table">
                 <thead>

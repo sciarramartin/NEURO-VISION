@@ -37,6 +37,7 @@ PROYECTO NEURO VISION/
 │   ├── componentes_visuales/ <-- Bloques y elementos visuales reutilizables
 │   │   ├── LongitudinalCharts.tsx <-- Elemento de gráficos analíticos
 │   │   ├── NavigationSidebar.tsx  <-- Barra lateral de navegación
+│   │   ├── TooltipAyuda.tsx       <-- Ícono de ayuda con tooltip informativo
 │   │   └── WebcamCapture.tsx      <-- Elemento de cámara y procesamiento de visión
 │   ├── contexto_global/   <-- Datos compartidos globalmente (roles, paciente activo)
 │   │   └── AppContext.tsx

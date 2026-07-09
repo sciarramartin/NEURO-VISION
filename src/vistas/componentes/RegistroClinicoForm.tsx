@@ -3,7 +3,7 @@
 import React from 'react';
 import { RegionKey, LadoKey } from '@/biblioteca/math/angles';
 import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
-import { User, HelpCircle, ChevronRight } from 'lucide-react';
+import { User, ChevronRight } from 'lucide-react';
 
 interface Patient { id: string; name: string; }
 
@@ -47,7 +47,7 @@ export function RegistroClinicoForm({
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           Paciente
-          <HelpCircle size={10} style={{ color: 'var(--info)' }} />
+          <TooltipAyuda posicion="top" texto="Seleccione el paciente a evaluar. Si no aparece, regístrelo presionando '+ Registrar'." />
         </label>
         <div style={{ display: 'flex', gap: 6 }}>
           <select
@@ -69,7 +69,7 @@ export function RegistroClinicoForm({
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           Estado Fármaco (L-Dopa)
-          <HelpCircle size={10} style={{ color: 'var(--info)' }} />
+          <TooltipAyuda posicion="top" texto="Indique si la medición es PRE o POST administración de Levodopa para evaluar la respuesta farmacológica." />
         </label>
         <div className="segmented-control">
           <button type="button" onClick={() => setModo('PRE')} disabled={isRecording}
@@ -84,7 +84,7 @@ export function RegistroClinicoForm({
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           Región de Medición
-          <HelpCircle size={10} style={{ color: 'var(--info)' }} />
+          <TooltipAyuda posicion="top" texto="Zona anatómica a evaluar: cejas, párpados, boca, nariz (facial) o codo, muñeca, hombro (extremidades superiores)." />
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
           {REGION_BOTONES.map(({ key, label }, i) => {
@@ -119,7 +119,7 @@ export function RegistroClinicoForm({
       <div className="form-group">
         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           Lado Facial / Corporal
-          <HelpCircle size={10} style={{ color: 'var(--info)' }} />
+          <TooltipAyuda posicion="top" texto="Lado del cuerpo a evaluar: Derecho o Izquierdo. Evalúe ambos por separado para detectar asimetrías clínicas." />
         </label>
         <div className="segmented-control">
           {(['DERECHA', 'IZQUIERDA'] as LadoKey[]).map(l => (

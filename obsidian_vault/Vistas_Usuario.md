@@ -41,6 +41,22 @@ Ubicación del archivo: [TrendsView.tsx](file:///c:/Users/arrai/OneDrive/Documen
 
 ---
 
+---
+
+### ⚙️ TooltipAyuda — Sistema de Ayuda Interactiva
+
+El componente [[TooltipAyuda]] proporciona tooltips informativos con ícono `?` en toda la interfaz. Se encuentra en 5 vistas del sistema con más de **30 usos totales** para guiar al evaluador clínico.
+
+**Correcciones aplicadas (Julio 2026):**
+1. Se implementó el uso real de la prop `posicion` para anclar tooltips en dirección fija.
+2. Se reemplazaron 4 íconos `HelpCircle` decorativos en `RegistroClinicoForm` por `TooltipAyuda` funcionales.
+3. Se agregaron 11 nuevos tooltips en `TrendsView` (que no tenía ninguno).
+4. Se agregaron tooltips en controles de `CaptureView` (zoom, ajuste fino, modo ejecución).
+5. Se agregaron tooltips adicionales en `DashboardView` (listado de pacientes, portal, formularios).
+
+---
+
 ## 🔗 Nodos Relacionados
 *   [[Inicio]]: Volver al panel principal.
 *   [[Arquitectura_MVC]]: Arquitectura MVC.
+*   [[TooltipAyuda]]: Componente de ayuda visual del sistema.
