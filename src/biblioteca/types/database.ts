@@ -17,11 +17,13 @@ export interface Patient {
   created_at: string;
 }
 
+import { RegionKey } from '../math/angles';
+
 export interface Session {
   id: string;
   patient_id: string;
   modo: 'PRE' | 'POST';
-  region: 'CEJA' | 'PARPADO' | 'BOCA' | 'NARIZ';
+  region: RegionKey;
   lado: 'IZQUIERDA' | 'DERECHA';
   tiempo_medicion: number;
   angulo_min: number;

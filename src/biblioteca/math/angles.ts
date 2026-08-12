@@ -1,6 +1,7 @@
 export interface Point {
   x: number;
   y: number;
+  z?: number;
 }
 
 export const PUNTOS_MEDICION = {
@@ -47,6 +48,36 @@ export const PUNTOS_MEDICION = {
     DERECHA: [11, 12, 24],
     DESCRIPCION: 'Simetría postural del hombro',
     tipo: 'cuerpo'
+  },
+  MARCHA: {
+    IZQUIERDA: [29, 30], // Talón Izq y Talón Der (usados para medir paso)
+    DERECHA: [29, 30],
+    DESCRIPCION: 'Análisis de la marcha (amplitud de paso)',
+    tipo: 'cuerpo'
+  },
+  RODILLA: {
+    IZQUIERDA: [23, 25, 27], // Cadera Izq - Rodilla Izq - Tobillo Izq
+    DERECHA: [24, 26, 28],
+    DESCRIPCION: 'Ángulo de rodilla (Flexión/Extensión)',
+    tipo: 'cuerpo'
+  },
+  CADERA: {
+    IZQUIERDA: [11, 23, 25], // Hombro Izq - Cadera Izq - Rodilla Izq
+    DERECHA: [12, 24, 26],
+    DESCRIPCION: 'Ángulo de cadera (Flexión/Extensión)',
+    tipo: 'cuerpo'
+  },
+  TOBILLO: {
+    IZQUIERDA: [25, 27, 31], // Rodilla Izq - Tobillo Izq - Punta del Pie Izq
+    DERECHA: [26, 28, 32],
+    DESCRIPCION: 'Ángulo de tobillo (Dorsiflexión/Plantiflexión)',
+    tipo: 'cuerpo'
+  },
+  TEMBLOR: {
+    IZQUIERDA: [],
+    DERECHA: [],
+    DESCRIPCION: 'Análisis de temblor por acelerometría',
+    tipo: 'cuerpo'
   }
 } as const;
 
@@ -66,14 +97,17 @@ export interface LandmarkRaw {
 
 /**
  * Calculates the angle (in degrees) between three points where p2 is the vertex.
+ * Supports 3D calculation if z coordinate is present in all points.
  */
 export function calcularAngulo(p1: Point, p2: Point, p3: Point): number {
-  const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
-  const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+  const hasZ = p1.z !== undefined && p2.z !== undefined && p3.z !== undefined;
+  
+  const v1 = { x: p1.x - p2.x, y: p1.y - p2.y, z: hasZ ? (p1.z! - p2.z!) : 0 };
+  const v2 = { x: p3.x - p2.x, y: p3.y - p2.y, z: hasZ ? (p3.z! - p2.z!) : 0 };
 
-  const dotProduct = v1.x * v2.x + v1.y * v2.y;
-  const normV1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
-  const normV2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+  const dotProduct = v1.x * v2.x + v1.y * v2.y + (hasZ ? v1.z * v2.z : 0);
+  const normV1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y + (hasZ ? v1.z * v1.z : 0));
+  const normV2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y + (hasZ ? v2.z * v2.z : 0));
 
   if (normV1 === 0 || normV2 === 0) return 0;
 
@@ -149,4 +183,14 @@ export function calcularCalidadTracking(
   if (avg >= 0.80) return 'excelente';
   if (avg >= 0.50) return 'degradado';
   return 'perdido';
+}
+
+/**
+ * Calculates Left vs Right asymmetry percentage index based on the max value denominator.
+ * 0% means perfect symmetry, higher values indicate greater asymmetry.
+ */
+export function calcularAsimetriaClinica(valIzq: number, valDer: number): number {
+  const maxVal = Math.max(valIzq, valDer);
+  if (maxVal === 0) return 0;
+  return (Math.abs(valIzq - valDer) / maxVal) * 100;
 }

@@ -19,6 +19,14 @@ interface RegistroClinicoFormProps {
   setLado: (lado: LadoKey) => void;
   isRecording: boolean;
   onOpenModal: () => void;
+  alturaRealCm: number;
+  setAlturaRealCm: (val: number) => void;
+  voltageDbs: number;
+  setVoltageDbs: (val: number) => void;
+  frecuenciaDbs: number;
+  setFrecuenciaDbs: (val: number) => void;
+  anchoPulsoDbs: number;
+  setAnchoPulsoDbs: (val: number) => void;
 }
 
 const REGION_BOTONES: { key: RegionKey; label: string }[] = [
@@ -29,12 +37,21 @@ const REGION_BOTONES: { key: RegionKey; label: string }[] = [
   { key: 'CODO', label: 'Codo' },
   { key: 'MUÑECA', label: 'Muñeca' },
   { key: 'HOMBRO', label: 'Hombro' },
+  { key: 'MARCHA', label: 'Marcha' },
+  { key: 'RODILLA', label: 'Rodilla' },
+  { key: 'CADERA', label: 'Cadera' },
+  { key: 'TOBILLO', label: 'Tobillo' },
+  { key: 'TEMBLOR', label: 'Temblor (Inercial)' },
 ];
 
 export function RegistroClinicoForm({
   patients, selectedPatientId, setSelectedPatientId,
   modo, setModo, region, handleRegionChange,
-  lado, setLado, isRecording, onOpenModal
+  lado, setLado, isRecording, onOpenModal,
+  alturaRealCm, setAlturaRealCm,
+  voltageDbs, setVoltageDbs,
+  frecuenciaDbs, setFrecuenciaDbs,
+  anchoPulsoDbs, setAnchoPulsoDbs
 }: RegistroClinicoFormProps) {
   return (
     <div className="card">
@@ -130,6 +147,78 @@ export function RegistroClinicoForm({
           ))}
         </div>
       </div>
+
+      {region === 'MARCHA' && (
+        <>
+          <div className="section-divider" />
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              Altura del Paciente (cm)
+              <TooltipAyuda posicion="top" texto="Altura en centímetros para calibrar la distancia en píxeles de la cámara a medidas clínicas reales." />
+            </label>
+            <input
+              type="number"
+              value={alturaRealCm}
+              onChange={e => setAlturaRealCm(Number(e.target.value))}
+              disabled={isRecording}
+              className="input-text"
+              style={{ fontSize: 12, padding: '7px 10px', background: 'var(--bg-base)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
+              min={100} max={250}
+            />
+          </div>
+        </>
+      )}
+
+      {region === 'TEMBLOR' && (
+        <>
+          <div className="section-divider" />
+          <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div>
+              <label className="form-label" style={{ display: 'flex', fontSize: 10, alignItems: 'center', gap: 4 }}>
+                Voltaje DBS (V)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={voltageDbs}
+                onChange={e => setVoltageDbs(Number(e.target.value))}
+                disabled={isRecording}
+                className="input-text"
+                style={{ width: '100%', fontSize: 12, padding: '7px 10px', background: 'var(--bg-base)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
+                min={0} max={10}
+              />
+            </div>
+            <div>
+              <label className="form-label" style={{ display: 'flex', fontSize: 10, alignItems: 'center', gap: 4 }}>
+                Freq DBS (Hz)
+              </label>
+              <input
+                type="number"
+                value={frecuenciaDbs}
+                onChange={e => setFrecuenciaDbs(Number(e.target.value))}
+                disabled={isRecording}
+                className="input-text"
+                style={{ width: '100%', fontSize: 12, padding: '7px 10px', background: 'var(--bg-base)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
+                min={0} max={250}
+              />
+            </div>
+            <div>
+              <label className="form-label" style={{ display: 'flex', fontSize: 10, alignItems: 'center', gap: 4 }}>
+                Pulso DBS (µs)
+              </label>
+              <input
+                type="number"
+                value={anchoPulsoDbs}
+                onChange={e => setAnchoPulsoDbs(Number(e.target.value))}
+                disabled={isRecording}
+                className="input-text"
+                style={{ width: '100%', fontSize: 12, padding: '7px 10px', background: 'var(--bg-base)', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}
+                min={0} max={500}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,125 +1,94 @@
-interface Complex {
-  re: number;
-  im: number;
+export interface DataInercial {
+  tiempo: number; // en segundos
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface TremorAnalysis {
+  frecuenciaDominante: number;
+  amplitudTremor: number;
+  espectro: { frecuencia: number; potencia: number }[];
 }
 
 /**
- * Computes the Radix-2 Cooley-Tukey FFT recursively.
- * x.length MUST be a power of 2.
+ * Analiza una serie temporal de datos del acelerómetro inercial tridimensional (X, Y, Z).
+ * Remueve la gravedad eje por eje para evitar rectificación de frecuencia,
+ * calcula la potencia combinada DFT y estima la frecuencia dominante y la amplitud RMS del temblor.
  */
-function cooleyTukeyFFT(x: Complex[]): Complex[] {
-  const n = x.length;
-  if (n <= 1) return x;
-
-  const even: Complex[] = [];
-  const odd: Complex[] = [];
-  for (let i = 0; i < n; i++) {
-    if (i % 2 === 0) even.push(x[i]);
-    else odd.push(x[i]);
+export function analizarTemblor(timeSeries: DataInercial[]): TremorAnalysis {
+  if (timeSeries.length < 10) {
+    return { frecuenciaDominante: 0, amplitudTremor: 0, espectro: [] };
   }
 
-  const tEven = cooleyTukeyFFT(even);
-  const tOdd = cooleyTukeyFFT(odd);
+  const N = timeSeries.length;
 
-  const y: Complex[] = new Array(n);
-  for (let k = 0; k < n / 2; k++) {
-    const angle = (-2 * Math.PI * k) / n;
-    const twiddle: Complex = {
-      re: Math.cos(angle),
-      im: Math.sin(angle)
-    };
+  // 1. Calcular la media de cada eje (componente estática / gravedad)
+  const meanX = timeSeries.reduce((sum, d) => sum + d.x, 0) / N;
+  const meanY = timeSeries.reduce((sum, d) => sum + d.y, 0) / N;
+  const meanZ = timeSeries.reduce((sum, d) => sum + d.z, 0) / N;
 
-    // tOdd[k] * twiddle
-    const tOddTwiddled: Complex = {
-      re: tOdd[k].re * twiddle.re - tOdd[k].im * twiddle.im,
-      im: tOdd[k].re * twiddle.im + tOdd[k].im * twiddle.re
-    };
+  // 2. Obtener señales dinámicas restando la media
+  const sigX = timeSeries.map(d => d.x - meanX);
+  const sigY = timeSeries.map(d => d.y - meanY);
+  const sigZ = timeSeries.map(d => d.z - meanZ);
 
-    y[k] = {
-      re: tEven[k].re + tOddTwiddled.re,
-      im: tEven[k].im + tOddTwiddled.im
-    };
-    y[k + n / 2] = {
-      re: tEven[k].re - tOddTwiddled.re,
-      im: tEven[k].im - tOddTwiddled.im
-    };
+  // 3. Calcular la amplitud del temblor (RMS combinada 3D)
+  let sumSq = 0;
+  for (let i = 0; i < N; i++) {
+    sumSq += sigX[i] * sigX[i] + sigY[i] * sigY[i] + sigZ[i] * sigZ[i];
   }
+  const amplitudTremor = Math.sqrt(sumSq / N);
 
-  return y;
-}
+  // 4. Calcular DFT para cada eje y sumar su potencia en el rango del Parkinson (1.5 Hz a 10.0 Hz)
+  const espectro: { frecuencia: number; potencia: number }[] = [];
+  let maxPotencia = -1;
+  let frecuenciaDominante = 0;
 
-/**
- * Analyzes a recorded signal to find the dominant tremor frequency (Hz)
- * and its amplitude in the Parkinson's tremor band (3.0 - 8.0 Hz).
- * 
- * Detrends the input angles by subtracting the mean to eliminate 0 Hz DC offset.
- */
-export function analyzeTremor(
-  angles: number[],
-  timestamps: number[], // time in seconds for each sample
-  minFreq: number = 3.0,
-  maxFreq: number = 8.0
-): { dominantFrequency: number; amplitude: number; powerSpectrum: { freq: number; power: number }[] } {
-  const n = angles.length;
-  if (n < 4) {
-    return { dominantFrequency: 0, amplitude: 0, powerSpectrum: [] };
-  }
+  const fStart = 1.5;
+  const fEnd = 10.0;
+  const fStep = 0.1;
 
-  // Calculate average sampling rate
-  const totalTime = timestamps[timestamps.length - 1] - timestamps[0];
-  if (totalTime <= 0) {
-    return { dominantFrequency: 0, amplitude: 0, powerSpectrum: [] };
-  }
-  const fs = n / totalTime;
+  for (let f = fStart; f <= fEnd; f += fStep) {
+    let realSumX = 0, imagSumX = 0;
+    let realSumY = 0, imagSumY = 0;
+    let realSumZ = 0, imagSumZ = 0;
+    
+    for (let n = 0; n < N; n++) {
+      const t = timeSeries[n].tiempo - timeSeries[0].tiempo;
+      const angle = 2 * Math.PI * f * t;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      
+      realSumX += sigX[n] * cosA;
+      imagSumX -= sigX[n] * sinA;
 
-  // Find next power of 2
-  let nFft = 1;
-  while (nFft < n) {
-    nFft *= 2;
-  }
+      realSumY += sigY[n] * cosA;
+      imagSumY -= sigY[n] * sinA;
 
-  // Detrend (subtract the mean) to avoid huge 0Hz spikes
-  const mean = angles.reduce((sum, val) => sum + val, 0) / n;
-  const fftInput: Complex[] = [];
-  for (let i = 0; i < nFft; i++) {
-    if (i < n) {
-      fftInput.push({ re: angles[i] - mean, im: 0 });
-    } else {
-      fftInput.push({ re: 0, im: 0 }); // Zero padding
+      realSumZ += sigZ[n] * cosA;
+      imagSumZ -= sigZ[n] * sinA;
+    }
+    
+    // Potencia espectral combinada normalizada
+    const potenciaX = (realSumX * realSumX + imagSumX * imagSumX) / N;
+    const potenciaY = (realSumY * realSumY + imagSumY * imagSumY) / N;
+    const potenciaZ = (realSumZ * realSumZ + imagSumZ * imagSumZ) / N;
+    
+    const potenciaTotal = potenciaX + potenciaY + potenciaZ;
+    const freqKey = parseFloat(f.toFixed(1));
+    espectro.push({ frecuencia: freqKey, potencia: potenciaTotal });
+
+    if (potenciaTotal > maxPotencia) {
+      maxPotencia = potenciaTotal;
+      frecuenciaDominante = freqKey;
     }
   }
-
-  // Execute FFT
-  const fftOutput = cooleyTukeyFFT(fftInput);
-
-  // Calculate power spectrum (first half, positive frequencies)
-  const powerSpectrum: { freq: number; power: number }[] = [];
-  let maxPower = -1;
-  let dominantFreq = 0;
-
-  for (let k = 0; k < nFft / 2; k++) {
-    const freq = (k * fs) / nFft;
-    // Magnitude normalization (divided by N)
-    const mag = Math.sqrt(fftOutput[k].re * fftOutput[k].re + fftOutput[k].im * fftOutput[k].im) / n;
-    const power = mag * mag;
-
-    powerSpectrum.push({ freq, power });
-
-    // Identify dominant peak in the specified tremor band
-    if (freq >= minFreq && freq <= maxFreq) {
-      if (power > maxPower) {
-        maxPower = power;
-        dominantFreq = freq;
-      }
-    }
-  }
-
-  // Calculate amplitude in degrees (2 * sqrt(Power) for single-sided scale)
-  const amplitude = maxPower > 0 ? Math.sqrt(maxPower) * 2 : 0;
 
   return {
-    dominantFrequency: parseFloat(dominantFreq.toFixed(2)),
-    amplitude: parseFloat(amplitude.toFixed(3)),
-    powerSpectrum
+    frecuenciaDominante,
+    amplitudTremor,
+    espectro
   };
 }
+export type RegionKeyTremor = 'TEMBLOR';

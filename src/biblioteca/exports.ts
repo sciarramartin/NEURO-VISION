@@ -53,9 +53,9 @@ export function exportarPDF(patient: PatientDetail, sessions: Session[]) {
   doc.text('Modo', 60, 94);
   doc.text('Región', 80, 94);
   doc.text('Lado', 105, 94);
-  doc.text('Rango (ROM)', 125, 94);
-  doc.text('V. Máx', 155, 94);
-  doc.text('Temblor (Hz)', 175, 94);
+  doc.text('ROM / Promedio', 120, 94);
+  doc.text('Velocidad / DBS', 152, 94);
+  doc.text('Temblor / RMS', 178, 94);
   doc.line(14, 97, 196, 97);
 
   doc.setFont('helvetica', 'normal');
@@ -78,21 +78,46 @@ export function exportarPDF(patient: PatientDetail, sessions: Session[]) {
       minute: '2-digit'
     });
 
-    const rom = (s.angulo_max - s.angulo_min).toFixed(1);
+    const isMarcha = s.region === 'MARCHA';
+    const isTemblor = s.region === 'TEMBLOR';
+
+    let romStr = '';
+    let velStr = '';
+    let tremorStr = '';
+
+    if (isMarcha) {
+      romStr = `${s.angulo_promedio.toFixed(1)} cm (Medio)`;
+      velStr = `Zancada: ${s.angulo_max.toFixed(1)} cm`;
+      tremorStr = 'N/A';
+    } else if (isTemblor) {
+      romStr = `Amp: ${s.amplitud_temblor?.toFixed(3) || '0.000'} m/s²`;
+      let dbsInfo = 'N/A';
+      if (s.datos_angulos && s.datos_angulos.startsWith('#DBS:')) {
+        const match = s.datos_angulos.match(/#DBS:V=([\d.]+),F=(\d+),W=(\d+);/);
+        if (match) {
+          dbsInfo = `${match[1]}V/${match[2]}Hz`;
+        }
+      }
+      velStr = `DBS: ${dbsInfo}`;
+      tremorStr = s.frecuencia_temblor && s.frecuencia_temblor > 0 
+        ? `${s.frecuencia_temblor.toFixed(1)} Hz` 
+        : 'S/T';
+    } else {
+      const romVal = (s.angulo_max - s.angulo_min).toFixed(1);
+      romStr = `${romVal}° (${s.angulo_min}°-${s.angulo_max}°)`;
+      velStr = `${s.velocidad_max.toFixed(1)}°/s`;
+      tremorStr = s.frecuencia_temblor && s.frecuencia_temblor > 0 && s.amplitud_temblor !== null
+        ? `${s.frecuencia_temblor.toFixed(1)} Hz (${s.amplitud_temblor.toFixed(1)}°)` 
+        : 'S/T';
+    }
 
     doc.text(date, 14, y);
     doc.text(s.modo, 60, y);
     doc.text(s.region, 80, y);
     doc.text(s.lado, 105, y);
-    doc.text(`${rom}° (${s.angulo_min}°-${s.angulo_max}°)`, 125, y);
-    doc.text(`${s.velocidad_max.toFixed(1)}°/s`, 155, y);
-    doc.text(
-      s.frecuencia_temblor && s.frecuencia_temblor > 0 && s.amplitud_temblor !== null
-        ? `${s.frecuencia_temblor}Hz (${s.amplitud_temblor.toFixed(1)}°)` 
-        : 'S/T', 
-      175, 
-      y
-    );
+    doc.text(romStr, 120, y);
+    doc.text(velStr, 152, y);
+    doc.text(tremorStr, 178, y);
 
     y += 8;
   });
@@ -123,22 +148,62 @@ export function exportarExcel(patient: PatientDetail, sessions: Session[]) {
     [`F. Nacimiento: ${patient.birth_date || 'N/A'}`],
     [`ID Paciente: ${patient.id}`],
     [],
-    ['ID Sesión', 'Fecha Registro', 'Estado (Modo)', 'Región', 'Lado', 'ROM (°)', 'Ángulo Mín (°)', 'Ángulo Máx (°)', 'V. Máx (°/s)', 'Temblor (Hz)', 'Amplitud Temblor (°)']
+    ['ID Sesión', 'Fecha Registro', 'Estado (Modo)', 'Región', 'Lado', 'ROM / Promedio', 'Valor Mín', 'Valor Máx', 'Velocidad Máx', 'Temblor (Hz)', 'Amplitud Temblor / RMS', 'Parámetros DBS']
   ];
 
   sessions.forEach((s) => {
+    const isMarcha = s.region === 'MARCHA';
+    const isTemblor = s.region === 'TEMBLOR';
+    
+    let romVal = '';
+    let minVal = '';
+    let maxVal = '';
+    let velVal = '';
+    let tremorFreq = '0';
+    let tremorAmp = '0';
+    let dbsParams = 'N/A';
+
+    if (isMarcha) {
+      romVal = `${s.angulo_promedio.toFixed(1)} cm`;
+      minVal = `${s.angulo_min.toFixed(1)} cm`;
+      maxVal = `${s.angulo_max.toFixed(1)} cm`;
+      velVal = 'N/A';
+    } else if (isTemblor) {
+      romVal = 'N/A';
+      minVal = 'N/A';
+      maxVal = 'N/A';
+      velVal = 'N/A';
+      tremorFreq = s.frecuencia_temblor ? s.frecuencia_temblor.toString() : '0';
+      tremorAmp = s.amplitud_temblor ? s.amplitud_temblor.toString() : '0';
+      
+      if (s.datos_angulos && s.datos_angulos.startsWith('#DBS:')) {
+        const match = s.datos_angulos.match(/#DBS:V=([\d.]+),F=(\d+),W=(\d+);/);
+        if (match) {
+          dbsParams = `V=${match[1]}, F=${match[2]}Hz, W=${match[3]}us`;
+        }
+      }
+    } else {
+      romVal = (s.angulo_max - s.angulo_min).toFixed(1);
+      minVal = s.angulo_min.toString();
+      maxVal = s.angulo_max.toString();
+      velVal = s.velocidad_max.toString();
+      tremorFreq = s.frecuencia_temblor ? s.frecuencia_temblor.toString() : '0';
+      tremorAmp = s.amplitud_temblor ? s.amplitud_temblor.toString() : '0';
+    }
+
     summaryHeaders.push([
       s.id.slice(0, 8),
       new Date(s.created_at).toLocaleString('es-ES'),
       s.modo,
       s.region,
       s.lado,
-      (s.angulo_max - s.angulo_min).toFixed(1),
-      s.angulo_min.toString(),
-      s.angulo_max.toString(),
-      s.velocidad_max.toString(),
-      s.frecuencia_temblor ? s.frecuencia_temblor.toString() : '0',
-      s.amplitud_temblor ? s.amplitud_temblor.toString() : '0'
+      romVal,
+      minVal,
+      maxVal,
+      velVal,
+      tremorFreq,
+      tremorAmp,
+      dbsParams
     ]);
   });
 
@@ -149,13 +214,27 @@ export function exportarExcel(patient: PatientDetail, sessions: Session[]) {
   sessions.forEach((s) => {
     if (!s.datos_angulos) return;
 
-    const timeSeriesData = [['Tiempo (s)', 'Ángulo (°)']];
-    const dataPoints = s.datos_angulos.split(';');
+    let cleanAnglesStr = s.datos_angulos;
+    if (cleanAnglesStr.startsWith('#DBS:')) {
+      const parts = cleanAnglesStr.split(';');
+      parts.shift();
+      cleanAnglesStr = parts.join(';');
+    }
+
+    if (!cleanAnglesStr) return;
+
+    const dataPoints = cleanAnglesStr.split(';');
+    const hasBilateral = dataPoints.some(point => point.split(',').length === 3);
+    const timeSeriesData = hasBilateral
+      ? [['Tiempo (s)', 'Ángulo Activo (°)', 'Ángulo Contralateral (°)']]
+      : [['Tiempo (s)', 'Ángulo (°)']];
 
     dataPoints.forEach((point) => {
       const parts = point.split(',');
       if (parts.length === 2) {
         timeSeriesData.push([parts[0], parts[1]]);
+      } else if (parts.length === 3) {
+        timeSeriesData.push([parts[0], parts[1], parts[2]]);
       }
     });
 

@@ -1,6 +1,18 @@
-const username = "sciarra.martin@gmail.com";
-const token = "ATATT3xFfGF0F_Zs9FUSPQVcozPaYyacxN_pjSWVvb3vrxAFny2MJB0-WPYZfVSkDwe7FJ2Vv179tRWu4NNZGZ075o6b1K1BtonW2miMfelcnDHEZ_iNRnHJakzjlJtc8o9bhkgHp-o65ssz0UwwQp-yqjDfMkW4JChsiWEcGXthmPCNv3_Xb3o=35A73DD8";
-const host = "sciarramartin.atlassian.net";
+const fs = require('fs');
+
+const configPath = "C:\\Users\\arrai\\.gemini\\antigravity-ide\\mcp_config.json";
+
+let host, username, token;
+try {
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  const jiraEnv = config.mcpServers.jira.env;
+  host = jiraEnv.JIRA_HOST;
+  username = jiraEnv.JIRA_USERNAME;
+  token = jiraEnv.JIRA_PASSWORD;
+} catch (e) {
+  console.error("No se pudo leer la configuración de mcp_config.json:", e.message);
+  process.exit(1);
+}
 
 async function verifyJira() {
   const auth = Buffer.from(`${username}:${token}`).toString('base64');

@@ -7,6 +7,9 @@ import { useCaptureData } from './hooks/useCaptureData';
 import { RegistroClinicoForm } from './componentes/RegistroClinicoForm';
 import { ResultadosCard } from './componentes/ResultadosCard';
 import { NuevoPacienteModal } from './componentes/NuevoPacienteModal';
+import { calcularAsimetriaClinica } from '@/biblioteca/math/angles';
+import { analizarCicloMarcha } from '@/biblioteca/math/gait';
+import { useAccelerometer } from './hooks/useAccelerometer';
 
 import {
   Camera, Circle, Square, Crosshair, ChevronDown, ChevronUp,
@@ -45,14 +48,27 @@ export function CaptureView() {
   const [calculatedMetrics, setCalculatedMetrics] = useState<any | null>(null);
   const [capturedData, setCapturedData] = useState<any[]>([]);
   const [trackingQuality, setTrackingQuality] = useState<string>('excelente');
-  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [recordingFeedback, setRecordingFeedback] = useState<{ type: 'warning' | 'info' | 'error'; message: string } | null>(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [alturaRealCm, setAlturaRealCm] = useState<number>(170);
+  const [voltageDbs, setVoltageDbs] = useState<number>(0.0);
+  const [frecuenciaDbs, setFrecuenciaDbs] = useState<number>(0);
+  const [anchoPulsoDbs, setAnchoPulsoDbs] = useState<number>(0);
+
+  const {
+    isCapturing: isAccelCapturing,
+    startCapture: startAccelCapture,
+    stopCapture: stopAccelCapture,
+    latestReading: latestAccelReading,
+    capturedSamplesCount: accelSamplesCount,
+    rawSeries: accelRawSeries
+  } = useAccelerometer(isMockMode);
 
   useEffect(() => { setMounted(true); }, []);
 
-  const handleDataCollected = (raw: { tiempo: number; angulo: number }[]) => {
+  const handleDataCollected = (raw: { tiempo: number; angulo: number; anguloContralateral?: number }[]) => {
     // Filtrar ángulos = 0: ocurre cuando los landmarks están superpuestos
     // en pantalla (normV1=0 o normV2=0 en calcularAngulo). No es un
     // ángulo real, es un artefacto de la malla facial. Lo filtramos
@@ -91,6 +107,26 @@ export function CaptureView() {
     // Datos válidos: limpiar feedback y calcular métricas
     setRecordingFeedback(null);
 
+    if (region === 'MARCHA') {
+      const heightsPx = data.map(d => d.anguloContralateral).filter((v): v is number => v !== undefined && v !== null && v > 0);
+      const avgHeightPx = heightsPx.length > 0 ? (heightsPx.reduce((a, b) => a + b, 0) / heightsPx.length) : 350;
+      const scaleCmPx = avgHeightPx > 0 ? (alturaRealCm / avgHeightPx) : 0.35;
+
+      const timeSeries = data.map(d => ({ tiempo: d.tiempo, distanciaPixeles: d.angulo }));
+      const analysis = analizarCicloMarcha(timeSeries, scaleCmPx);
+
+      setCalculatedMetrics({
+        angMin: analysis.minimoCm,
+        angMax: analysis.maximoCm,
+        angAvg: analysis.promedioCm,
+        maxVel: 0,
+        tremorFreq: 0,
+        tremorAmp: 0
+      });
+      setShowResultsModal(true);
+      return;
+    }
+
     const angles = data.map(d => d.angulo);
     const times = data.map(d => d.tiempo);
     const angMin = Math.min(...angles);
@@ -123,13 +159,26 @@ export function CaptureView() {
       }
     }
 
+    // Calculate bilateral asymmetry index
+    const activeRom = angMax - angMin;
+    const contralateralAngles = data.map(d => d.anguloContralateral).filter((v): v is number => v !== undefined && v !== null);
+    let asimetriaVal: number | undefined = undefined;
+
+    if (contralateralAngles.length > 0) {
+      const contraMin = Math.min(...contralateralAngles);
+      const contraMax = Math.max(...contralateralAngles);
+      const contraRom = contraMax - contraMin;
+      asimetriaVal = calcularAsimetriaClinica(activeRom, contraRom);
+    }
+
     setCalculatedMetrics({
       angMin: parseFloat(angMin.toFixed(1)),
       angMax: parseFloat(angMax.toFixed(1)),
       angAvg: parseFloat(angAvg.toFixed(1)),
       maxVel: parseFloat(maxVel.toFixed(1)),
       tremorFreq: dominantFrequency > 0 ? parseFloat(dominantFrequency.toFixed(1)) : 0,
-      tremorAmp: amplitude > 0 ? parseFloat(amplitude.toFixed(2)) : 0
+      tremorAmp: amplitude > 0 ? parseFloat(amplitude.toFixed(2)) : 0,
+      asimetria_index: asimetriaVal !== undefined ? parseFloat(asimetriaVal.toFixed(1)) : undefined
     });
     setShowResultsModal(true);
   };
@@ -140,14 +189,42 @@ export function CaptureView() {
     setCapturedData([]);
     setRecordingFeedback(null);
     setShowResultsModal(false);
-    startRecording();
+    if (region === 'TEMBLOR') {
+      startAccelCapture();
+      startRecording();
+    } else {
+      startRecording();
+    }
   };
 
-  const handleStopRecording = () => stopRecording();
+  const handleStopRecording = () => {
+    if (region === 'TEMBLOR') {
+      stopRecording();
+      const analysis = stopAccelCapture();
+      const mappedData = accelRawSeries.map(d => ({
+        tiempo: d.tiempo,
+        angulo: Math.sqrt(d.x * d.x + d.y * d.y + d.z * d.z)
+      }));
+      setCapturedData(mappedData);
+      setCalculatedMetrics({
+        angMin: 0,
+        angMax: 0,
+        angAvg: 0,
+        maxVel: 0,
+        tremorFreq: parseFloat(analysis.frecuenciaDominante.toFixed(1)),
+        tremorAmp: parseFloat(analysis.amplitudTremor.toFixed(2)),
+        asimetria_index: null
+      });
+      setShowResultsModal(true);
+    } else {
+      stopRecording();
+    }
+  };
 
   const handleSaveSession = async () => {
     if (!calculatedMetrics) return;
-    const success = await saveSession(selectedPatientId, modo, region, lado, capturedData, calculatedMetrics);
+    const dbsParams = region === 'TEMBLOR' ? { voltage: voltageDbs, frecuencia: frecuenciaDbs, anchoPulso: anchoPulsoDbs } : undefined;
+    const success = await saveSession(selectedPatientId, modo, region, lado, capturedData, calculatedMetrics, dbsParams);
     if (success) {
       setShowResultsModal(false);
       setTimeout(() => { setCalculatedMetrics(null); setCapturedData([]); resetSaveStatus(); }, 2000);
@@ -185,7 +262,65 @@ export function CaptureView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start w-full">
         <div className="lg:col-span-2 flex flex-col gap-4 w-full">
           <div className="relative w-full">
-            {isCameraActive ? (
+            {region === 'TEMBLOR' ? (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 20, padding: '32px 24px', minHeight: 320,
+                background: 'var(--bg-card)', border: '1px solid var(--border-card)',
+                borderRadius: 'var(--radius-md)', textAlign: 'center', position: 'relative', overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--accent)', background: 'var(--accent-dim)', padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontWeight: 600 }}>
+                  <Activity size={12} className="pulse-glow" style={{ animationDuration: isAccelCapturing ? '1s' : '3s' }} /> 
+                  {isAccelCapturing ? 'Capturando Temblor' : 'Sensor Wearable Conectado'}
+                </div>
+                
+                <div style={{ display: 'flex', gap: 40, justifyContent: 'center', width: '100%', margin: '20px 0' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: '#ef4444' }}>{latestAccelReading.x.toFixed(2)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Eje X (m/s²)</div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: '#22c55e' }}>{latestAccelReading.y.toFixed(2)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Eje Y (m/s²)</div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: '#3b82f6' }}>{latestAccelReading.z.toFixed(2)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Eje Z (m/s²)</div>
+                  </div>
+                </div>
+
+                <div style={{ width: '100%', height: 100, display: 'flex', alignItems: 'flex-end', gap: 3, padding: '10px 0', borderBottom: '1px dashed var(--border-card)' }}>
+                  {Array.from({ length: 40 }).map((_, i) => {
+                    const heightVal = isAccelCapturing 
+                      ? 15 + Math.abs(Math.sin((i + accelSamplesCount) * 0.4)) * 60 + Math.random() * 15
+                      : 10 + Math.sin(i * 0.2) * 10;
+                    return (
+                      <div 
+                        key={i} 
+                        style={{ 
+                          flex: 1, 
+                          height: `${heightVal}%`, 
+                          background: isAccelCapturing 
+                            ? 'linear-gradient(to top, var(--accent-dim), var(--accent))' 
+                            : 'var(--border-card)',
+                          borderRadius: '2px 2px 0 0',
+                          transition: 'height 0.1s ease'
+                        }} 
+                      />
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 280 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {isAccelCapturing 
+                      ? `Registrando datos inerciales... (${accelSamplesCount} muestras)` 
+                      : 'Sensor listo para medir temblor. Pulse Grabar en el panel lateral.'
+                    }
+                  </p>
+                </div>
+              </div>
+            ) : isCameraActive ? (
               <WebcamCapture
                 region={region} lado={lado} isRecording={isRecording}
                 isMockMode={isMockMode} landmarksPersonalizados={getCustomLandmarksArray()}
@@ -340,6 +475,10 @@ export function CaptureView() {
             setModo={setModo} region={region} handleRegionChange={handleRegionChange}
             lado={lado} setLado={setLado} isRecording={isRecording}
             onOpenModal={() => setIsPatientModalOpen(true)}
+            alturaRealCm={alturaRealCm} setAlturaRealCm={setAlturaRealCm}
+            voltageDbs={voltageDbs} setVoltageDbs={setVoltageDbs}
+            frecuenciaDbs={frecuenciaDbs} setFrecuenciaDbs={setFrecuenciaDbs}
+            anchoPulsoDbs={anchoPulsoDbs} setAnchoPulsoDbs={setAnchoPulsoDbs}
           />
 
           <div style={{ border: '1px solid var(--border-card)', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
@@ -465,7 +604,7 @@ export function CaptureView() {
       {showResultsModal && calculatedMetrics && (
         <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
           <div className="modal-content" style={{ maxWidth: 560, maxHeight: '90vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
-            <ResultadosCard metrics={calculatedMetrics} saveStatus={saveStatus} onSave={handleSaveSession} onDiscard={handleDiscardRecording} />
+            <ResultadosCard metrics={calculatedMetrics} saveStatus={saveStatus} onSave={handleSaveSession} onDiscard={handleDiscardRecording} region={region} />
           </div>
         </div>
       )}

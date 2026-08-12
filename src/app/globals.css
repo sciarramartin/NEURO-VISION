@@ -39,6 +39,9 @@
   --danger-dim:    rgba(239, 68, 68, 0.1);
   --danger-border: rgba(239, 68, 68, 0.3);
 
+  --pre-color:     #F43F5E; /* Coral */
+  --post-color:    #06B6D4; /* Cian */
+
   --success:       #10B981;
   --success-glow:  rgba(16, 185, 129, 0.12);
 

@@ -30,7 +30,7 @@ interface UseMediaPipeProps {
   landmarksPersonalizados: [number, number, number] | null;
   modoSeleccionActivo: boolean;
   zoom: number;
-  onDataCollected: (data: { tiempo: number; angulo: number }[]) => void;
+  onDataCollected: (data: { tiempo: number; angulo: number; anguloContralateral?: number }[]) => void;
   onTrackingQuality?: (quality: CalidadTracking) => void;
   onLandmarkClick?: (index: number) => void;
 }
@@ -61,7 +61,7 @@ export function useMediaPipe({
   const [hoveredLandmark, setHoveredLandmark] = useState<number>(-1);
 
   // Refs de estado estable para el bucle de renderizado
-  const recordingDataRef = useRef<{ tiempo: number; angulo: number }[]>([]);
+  const recordingDataRef = useRef<{ tiempo: number; angulo: number; anguloContralateral?: number }[]>([]);
   const startTimeRef = useRef<number | null>(null);
   const activeStreamRef = useRef<MediaStream | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
@@ -104,9 +104,10 @@ export function useMediaPipe({
   const getCanvasCoords = useCallback((lm: LandmarkRaw, canvasW: number, canvasH: number) => {
     const rawX = lm.x * canvasW;
     const rawY = lm.y * canvasH;
+    const rawZ = lm.z !== undefined ? lm.z * Math.max(canvasW, canvasH) : undefined;
 
     if (zoom === 1) {
-      return { x: rawX, y: rawY };
+      return { x: rawX, y: rawY, z: rawZ };
     }
 
     const srcW = canvasW / zoom;
@@ -116,7 +117,7 @@ export function useMediaPipe({
 
     const px = (rawX - srcX) * (canvasW / srcW);
     const py = (rawY - srcY) * (canvasH / srcH);
-    return { x: px, y: py };
+    return { x: px, y: py, z: rawZ };
   }, [zoom]);
 
   // Ref estable para onDataCollected: evita que cambios de referencia
@@ -276,6 +277,12 @@ export function useMediaPipe({
       const isCustom = !!landmarksPersonalizados;
       const activeIndices = getActiveIndices();
 
+      const getContralateralIndices = () => {
+        if (landmarksPersonalizados) return null;
+        const config = PUNTOS_MEDICION[region];
+        return lado === 'IZQUIERDA' ? config.DERECHA : config.IZQUIERDA;
+      };
+
       if (isMockMode) {
         // Strategy: Mock Mode simulated rendering
         const simAngle = drawMockLandmarks(
@@ -290,7 +297,11 @@ export function useMediaPipe({
         );
         if (isRecording && startTimeRef.current !== null) {
           const elapsed = (performance.now() - startTimeRef.current) / 1000;
-          recordingDataRef.current.push({ tiempo: elapsed, angulo: simAngle });
+          recordingDataRef.current.push({ 
+            tiempo: elapsed, 
+            angulo: simAngle,
+            anguloContralateral: simAngle * 0.9
+          });
         }
       } else if (video && video.readyState >= 2) {
         // Strategy: Real Camera capturing & vision tracking
@@ -344,9 +355,26 @@ export function useMediaPipe({
                 drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
                 const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
 
+                let contralateralAngle: number | undefined = undefined;
+                const contraIndices = getContralateralIndices();
+                if (contraIndices) {
+                  const ptsContra = contraIndices.map(idx => {
+                    if (!landmarks[idx]) return null;
+                    return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
+                  });
+                  if (ptsContra.every(p => p !== null)) {
+                    const nonNullPtsContra = ptsContra as Point[];
+                    contralateralAngle = calcularAngulo(nonNullPtsContra[0], nonNullPtsContra[1], nonNullPtsContra[2]);
+                  }
+                }
+
                 if (isRecording && startTimeRef.current !== null) {
                   const elapsed = (performance.now() - startTimeRef.current) / 1000;
-                  recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
+                  recordingDataRef.current.push({ 
+                    tiempo: elapsed, 
+                    angulo: currentAngle,
+                    anguloContralateral: contralateralAngle 
+                  });
                 }
               }
             }
@@ -376,19 +404,84 @@ export function useMediaPipe({
               getCanvasCoords(lm, liveCanvas.width, liveCanvas.height)
             );
 
-            const pts = activeIndices.map(idx => {
-              if (!landmarks[idx]) return null;
-              return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
-            });
+            if (region === 'MARCHA') {
+              const talonIzq = landmarks[29];
+              const talonDer = landmarks[30];
+              const nariz = landmarks[0];
+              const tobilloIzq = landmarks[27];
+              const tobilloDer = landmarks[28];
 
-            if (pts.every(p => p !== null)) {
-              const nonNullPts = pts as Point[];
-              drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
-              const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
+              if (talonIzq && talonDer) {
+                const pIzq = getCanvasCoords(talonIzq, liveCanvas.width, liveCanvas.height);
+                const pDer = getCanvasCoords(talonDer, liveCanvas.width, liveCanvas.height);
 
-              if (isRecording && startTimeRef.current !== null) {
-                const elapsed = (performance.now() - startTimeRef.current) / 1000;
-                recordingDataRef.current.push({ tiempo: elapsed, angulo: currentAngle });
+                [ctxLive, ctxMesh].forEach(ctx => {
+                  ctx.strokeStyle = '#10B981'; // --accent
+                  ctx.lineWidth = 3;
+                  ctx.beginPath();
+                  ctx.moveTo(pIzq.x, pIzq.y);
+                  ctx.lineTo(pDer.x, pDer.y);
+                  ctx.stroke();
+
+                  ctx.fillStyle = '#10B981';
+                  ctx.beginPath();
+                  ctx.arc(pIzq.x, pIzq.y, 6, 0, 2 * Math.PI);
+                  ctx.arc(pDer.x, pDer.y, 6, 0, 2 * Math.PI);
+                  ctx.fill();
+                });
+
+                const currentDistancePx = Math.abs(pIzq.x - pDer.x);
+
+                let heightPx = 0;
+                if (nariz && (tobilloIzq || tobilloDer)) {
+                  const pNariz = getCanvasCoords(nariz, liveCanvas.width, liveCanvas.height);
+                  const pTobIzq = tobilloIzq ? getCanvasCoords(tobilloIzq, liveCanvas.width, liveCanvas.height) : null;
+                  const pTobDer = tobilloDer ? getCanvasCoords(tobilloDer, liveCanvas.width, liveCanvas.height) : null;
+                  const yTob = pTobIzq && pTobDer ? (pTobIzq.y + pTobDer.y) / 2 : (pTobIzq?.y ?? pTobDer?.y ?? 0);
+                  heightPx = Math.abs(yTob - pNariz.y);
+                }
+
+                if (isRecording && startTimeRef.current !== null) {
+                  const elapsed = (performance.now() - startTimeRef.current) / 1000;
+                  recordingDataRef.current.push({
+                    tiempo: elapsed,
+                    angulo: currentDistancePx,
+                    anguloContralateral: heightPx
+                  });
+                }
+              }
+            } else {
+              const pts = activeIndices.map(idx => {
+                if (!landmarks[idx]) return null;
+                return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
+              });
+
+              if (pts.every(p => p !== null)) {
+                const nonNullPts = pts as Point[];
+                drawAngleOverlays(ctxLive, ctxMesh, nonNullPts, isCustom);
+                const currentAngle = calcularAngulo(nonNullPts[0], nonNullPts[1], nonNullPts[2]);
+
+                let contralateralAngle: number | undefined = undefined;
+                const contraIndices = getContralateralIndices();
+                if (contraIndices) {
+                  const ptsContra = contraIndices.map(idx => {
+                    if (!landmarks[idx]) return null;
+                    return getCanvasCoords(landmarks[idx], liveCanvas.width, liveCanvas.height);
+                  });
+                  if (ptsContra.every(p => p !== null)) {
+                    const nonNullPtsContra = ptsContra as Point[];
+                    contralateralAngle = calcularAngulo(nonNullPtsContra[0], nonNullPtsContra[1], nonNullPtsContra[2]);
+                  }
+                }
+
+                if (isRecording && startTimeRef.current !== null) {
+                  const elapsed = (performance.now() - startTimeRef.current) / 1000;
+                  recordingDataRef.current.push({ 
+                    tiempo: elapsed, 
+                    angulo: currentAngle,
+                    anguloContralateral: contralateralAngle
+                  });
+                }
               }
             }
           }

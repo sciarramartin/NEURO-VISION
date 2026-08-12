@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
+import { RegionKey } from '@/biblioteca/math/angles';
 import { BarChart3, Save, Trash2 } from 'lucide-react';
 
 interface CalculatedMetrics {
@@ -15,6 +16,7 @@ interface ResultadosCardProps {
   saveStatus: 'idle' | 'saving' | 'success' | 'error';
   onSave: () => void;
   onDiscard: () => void;
+  region: RegionKey;
 }
 
 interface RowConfig {
@@ -22,13 +24,27 @@ interface RowConfig {
   alert: boolean; tooltip: string;
 }
 
-export function ResultadosCard({ metrics, saveStatus, onSave, onDiscard }: ResultadosCardProps) {
+export function ResultadosCard({ metrics, saveStatus, onSave, onDiscard, region }: ResultadosCardProps) {
   if (!metrics) return null;
 
+  const isMarcha = region === 'MARCHA';
+  const isTemblor = region === 'TEMBLOR';
   const rom = metrics.angMax - metrics.angMin;
 
-  const rows: RowConfig[] = [
-    { label: 'Rango de Movimiento (ROM)', value: `${rom}° (${metrics.angMin}° - ${metrics.angMax}°)`, ref: '≥ 35°', alert: rom < 35,
+  const rows: RowConfig[] = isMarcha ? [
+    { label: 'Amplitud de Paso Promedio', value: `${metrics.angAvg} cm`, ref: '50 - 80 cm', alert: metrics.angAvg < 45,
+      tooltip: 'Media de la amplitud de todos los pasos detectados. Un paso corto es indicativo de marcha parkinsoniana o hidrocefalia normotensiva (HNT).' },
+    { label: 'Amplitud Máxima (Zancada)', value: `${metrics.angMax} cm`, ref: '≥ 60 cm', alert: metrics.angMax < 50,
+      tooltip: 'La mayor distancia horizontal entre talones registrada en la sesión.' },
+    { label: 'Amplitud Mínima', value: `${metrics.angMin} cm`, ref: '≥ 40 cm', alert: metrics.angMin < 35,
+      tooltip: 'La menor distancia horizontal de paso registrada.' }
+  ] : isTemblor ? [
+    { label: 'Frecuencia Dominante', value: `${metrics.tremorFreq.toFixed(1)} Hz`, ref: '3.5 - 6.5 Hz', alert: metrics.tremorFreq > 0 && (metrics.tremorFreq < 3.5 || metrics.tremorFreq > 6.5),
+      tooltip: 'Frecuencia principal en el espectro de potencia FFT. El temblor en Parkinson típicamente oscila entre 3.5 y 6.5 Hz.' },
+    { label: 'Amplitud de Aceleración (RMS)', value: `${metrics.tremorAmp.toFixed(3)} m/s²`, ref: '< 0.050 m/s²', alert: metrics.tremorAmp >= 0.050,
+      tooltip: 'Valor eficaz (RMS) de la aceleración dinámica. Refleja la severidad física del temblor.' }
+  ] : [
+    { label: 'Rango de Movimiento (ROM)', value: `${rom.toFixed(1)}° (${metrics.angMin}° - ${metrics.angMax}°)`, ref: '≥ 35°', alert: rom < 35,
       tooltip: 'Diferencia entre el ángulo máximo y mínimo registrado. Un ROM reducido (< 30°) puede indicar rigidez articular, espasticidad o hipocinesia — síntomas cardinales del Parkinson. En CEJA, un ROM normal ≥ 35°.' },
     { label: 'Ángulo Promedio', value: `${metrics.angAvg}°`, ref: '120° - 160°', alert: metrics.angAvg < 100 || metrics.angAvg > 170,
       tooltip: 'Media de todos los ángulos medidos durante la sesión. Refleja la posición postural de reposo. Valores fuera del rango de referencia pueden indicar contractura o distonía postural.' },

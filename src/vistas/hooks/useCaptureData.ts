@@ -15,6 +15,7 @@ interface CalculatedMetrics {
   maxVel: number;
   tremorFreq: number;
   tremorAmp: number;
+  asimetria_index?: number;
 }
 
 /**
@@ -82,13 +83,22 @@ export function useCaptureData() {
     modo: string,
     region: RegionKey,
     lado: LadoKey,
-    capturedData: { tiempo: number; angulo: number }[],
-    metrics: CalculatedMetrics
+    capturedData: { tiempo: number; angulo: number; anguloContralateral?: number }[],
+    metrics: CalculatedMetrics,
+    dbsParams?: { voltage: number; frecuencia: number; anchoPulso: number }
   ): Promise<boolean> => {
     if (capturedData.length === 0) return false;
     setSaveStatus('saving');
     try {
-      const anglesStr = capturedData.map(d => `${d.tiempo.toFixed(2)},${d.angulo.toFixed(1)}`).join(';');
+      let anglesStr = capturedData.map(d => {
+        const contraPart = d.anguloContralateral !== undefined ? `,${d.anguloContralateral.toFixed(1)}` : '';
+        return `${d.tiempo.toFixed(2)},${d.angulo.toFixed(1)}${contraPart}`;
+      }).join(';');
+
+      if (dbsParams && (dbsParams.voltage > 0 || dbsParams.frecuencia > 0 || dbsParams.anchoPulso > 0)) {
+        anglesStr = `#DBS:V=${dbsParams.voltage},F=${dbsParams.frecuencia},W=${dbsParams.anchoPulso};` + anglesStr;
+      }
+
       const newSession = {
         patient_id: patientId,
         modo,
@@ -101,7 +111,7 @@ export function useCaptureData() {
         velocidad_max: metrics.maxVel,
         frecuencia_temblor: metrics.tremorFreq,
         amplitud_temblor: metrics.tremorAmp,
-        asimetria_index: null,
+        asimetria_index: metrics.asimetria_index ?? null,
         datos_angulos: anglesStr
       };
 
