@@ -12,7 +12,8 @@ model Patient {
   name       String
   birthDate  DateTime? @map("birth_date") @db.Date
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  sessions   Session[]
+  sessions     Session[]
+  evaluaciones Evaluacion[]
 
   @@map("patients")
 }
@@ -36,4 +37,21 @@ model Session {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("sessions")
+}
+
+/// Evaluaciones estructuradas (escalas clínicas, protocolos multi-ítem).
+/// Complementa a Session (una medición angular) sin modificarla: el detalle
+/// de cada escala vive en `datos` (JSON) y `tipo` indica cómo leerlo.
+model Evaluacion {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId    String   @map("patient_id") @db.Uuid
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tipo         String   @db.VarChar(30)
+  modo         String   @db.VarChar(10)
+  puntajeTotal Float?   @map("puntaje_total")
+  datos        Json
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([patientId, tipo])
+  @@map("evaluaciones")
 }

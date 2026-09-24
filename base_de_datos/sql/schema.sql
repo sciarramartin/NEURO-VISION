@@ -111,3 +111,33 @@ CREATE POLICY "Admins can manage all sessions" ON public.sessions
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'::user_role)
     );
+
+-- Evaluaciones estructuradas (UPDRS III y futuras escalas). `datos` guarda
+-- el detalle ítem por ítem en JSON; `tipo` indica el formato ('UPDRS_III').
+CREATE TABLE IF NOT EXISTS public.evaluaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
+    modo VARCHAR(10) NOT NULL, -- 'PRE' or 'POST'
+    puntaje_total REAL,
+    datos JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS evaluaciones_patient_tipo_idx ON public.evaluaciones (patient_id, tipo);
+
+ALTER TABLE public.evaluaciones ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Patients can view own evaluaciones" ON public.evaluaciones;
+CREATE POLICY "Patients can view own evaluaciones" ON public.evaluaciones
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.patients
+            WHERE public.patients.id = public.evaluaciones.patient_id AND public.patients.profile_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Admins can manage all evaluaciones" ON public.evaluaciones;
+CREATE POLICY "Admins can manage all evaluaciones" ON public.evaluaciones
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'::user_role)
+    );

@@ -128,9 +128,9 @@ export function useFacialMuscleCapture({ punto, isRecording, isMockMode, onDataC
       if (isMockMode) {
         // Curva sintética relajación -> contracción máxima -> leve relajación,
         // consistente con el "Modo Simulador" del resto de la app.
-        ctx.fillStyle = 'var(--bg-base)'.startsWith('var') ? '#131314' : '#131314';
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#5F6368';
+        ctx.fillStyle = '#80868B';
         ctx.font = '12px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('Modo simulador — sin cámara', canvas.width / 2, canvas.height / 2);

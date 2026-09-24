@@ -8,12 +8,14 @@ interface Props {
   fase: FaseCaptura;
   segundos: number;
   progreso: number; // 0 -> 1
+  /** Duración total en segundos, mostrada antes de iniciar (por defecto 7). */
+  total?: number;
 }
 
 const RADIO = 48;
 const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
 
-export function CapturaTimerRing({ fase, segundos, progreso }: Props) {
+export function CapturaTimerRing({ fase, segundos, progreso, total = 7 }: Props) {
   const offset = CIRCUNFERENCIA * (1 - progreso);
   return (
     <div className="captura-timer-ring">
@@ -27,7 +29,7 @@ export function CapturaTimerRing({ fase, segundos, progreso }: Props) {
         />
       </svg>
       <div className="captura-timer-label">
-        {fase === 'lista' && <span className="n">7</span>}
+        {fase === 'lista' && <span className="n">{total}</span>}
         {fase === 'grabando' && <span className="n">{segundos}</span>}
         {fase === 'finalizada' && <span className="n" style={{ color: 'var(--accent)', display: 'flex' }}><Check size={26} strokeWidth={3} /></span>}
         <span className="u">{fase === 'grabando' ? 'segundos' : fase === 'finalizada' ? 'listo' : 'duración'}</span>

@@ -6,7 +6,23 @@ export interface DBClient {
   getSessions(patientId?: string, limit?: number): Promise<any[]>;
   createSession(session: any): Promise<any>;
   deleteSession(id: string): Promise<any>;
+  getEvaluaciones(patientId?: string, tipo?: string): Promise<EvaluacionRow[]>;
+  createEvaluacion(ev: NuevaEvaluacion): Promise<EvaluacionRow>;
+  deleteEvaluacion(id: string): Promise<{ success: boolean }>;
 }
+
+/** Evaluación estructurada (UPDRS III, etc.). `datos` es JSON libre según `tipo`. */
+export interface EvaluacionRow {
+  id: string;
+  patient_id: string;
+  tipo: string;
+  modo: string;
+  puntaje_total: number | null;
+  datos: unknown;
+  created_at: string;
+}
+
+export type NuevaEvaluacion = Omit<EvaluacionRow, 'id' | 'created_at'>;
 
 let dbInstance: DBClient | null = null;
 
@@ -154,7 +170,50 @@ function getPrismaClient(): DBClient {
         where: { id }
       });
       return { success: true };
+    },
+
+    async getEvaluaciones(patientId, tipo) {
+      const rows = await prisma.evaluacion.findMany({
+        where: { ...(patientId ? { patientId } : {}), ...(tipo ? { tipo } : {}) },
+        orderBy: { createdAt: 'asc' }
+      });
+      return rows.map(mapEvaluacionPrisma);
+    },
+
+    async createEvaluacion(ev) {
+      const e = await prisma.evaluacion.create({
+        data: {
+          patientId: ev.patient_id,
+          tipo: ev.tipo,
+          modo: ev.modo,
+          puntajeTotal: ev.puntaje_total,
+          datos: ev.datos
+        }
+      });
+      return mapEvaluacionPrisma(e);
+    },
+
+    async deleteEvaluacion(id) {
+      await prisma.evaluacion.delete({ where: { id } });
+      return { success: true };
     }
+  };
+}
+
+interface EvaluacionPrismaRaw {
+  id: string; patientId: string; tipo: string; modo: string;
+  puntajeTotal: number | null; datos: unknown; createdAt: Date;
+}
+
+function mapEvaluacionPrisma(e: EvaluacionPrismaRaw): EvaluacionRow {
+  return {
+    id: e.id,
+    patient_id: e.patientId,
+    tipo: e.tipo,
+    modo: e.modo,
+    puntaje_total: e.puntajeTotal,
+    datos: e.datos,
+    created_at: e.createdAt.toISOString()
   };
 }
 
@@ -250,6 +309,27 @@ function getSupabaseClient(): DBClient {
 
       if (error) throw error;
       return { success: true };
+    },
+
+    async getEvaluaciones(patientId, tipo) {
+      let query = serverSupabase.from('evaluaciones').select('*').order('created_at', { ascending: true });
+      if (patientId) query = query.eq('patient_id', patientId);
+      if (tipo) query = query.eq('tipo', tipo);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as EvaluacionRow[];
+    },
+
+    async createEvaluacion(ev) {
+      const { data, error } = await serverSupabase.from('evaluaciones').insert(ev).select().single();
+      if (error) throw error;
+      return data as EvaluacionRow;
+    },
+
+    async deleteEvaluacion(id) {
+      const { error } = await serverSupabase.from('evaluaciones').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
     }
   };
 }
@@ -261,6 +341,8 @@ async function getSQLiteClient(): Promise<DBClient> {
   const path = (await import('path')).default;
 
   const dbPath = path.join(process.cwd(), 'database', 'parkinson.db');
+  // En un clon limpio la carpeta no existe (está en .gitignore) y SQLite no la crea.
+  (await import('fs')).mkdirSync(path.dirname(dbPath), { recursive: true });
   
   const db = await open({
     filename: dbPath,
@@ -294,7 +376,20 @@ async function getSQLiteClient(): Promise<DBClient> {
       created_at TEXT NOT NULL,
       FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS evaluaciones (
+      id TEXT PRIMARY KEY,
+      patient_id TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+      modo TEXT NOT NULL,
+      puntaje_total REAL,
+      datos TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE
+    );
   `);
+
+  const parseEvaluacion = (r: Omit<EvaluacionRow, 'datos'> & { datos: string }): EvaluacionRow => ({ ...r, datos: JSON.parse(r.datos) });
 
   // Seeding: Check if mock patients are missing
   const mockPatientCount = await db.get("SELECT COUNT(*) as count FROM patients WHERE id = 'mock-p1'");
@@ -384,6 +479,29 @@ async function getSQLiteClient(): Promise<DBClient> {
     },
     async deleteSession(id) {
       await db.run(`DELETE FROM sessions WHERE id = ?`, [id]);
+      return { success: true };
+    },
+    async getEvaluaciones(patientId, tipo) {
+      const where: string[] = [], params: string[] = [];
+      if (patientId) { where.push('patient_id = ?'); params.push(patientId); }
+      if (tipo) { where.push('tipo = ?'); params.push(tipo); }
+      const rows = await db.all(
+        `SELECT * FROM evaluaciones ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY created_at ASC`,
+        params
+      );
+      return rows.map(parseEvaluacion);
+    },
+    async createEvaluacion(ev) {
+      const id = crypto.randomUUID();
+      const created_at = new Date().toISOString();
+      await db.run(
+        `INSERT INTO evaluaciones (id, patient_id, tipo, modo, puntaje_total, datos, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, ev.patient_id, ev.tipo, ev.modo, ev.puntaje_total, JSON.stringify(ev.datos), created_at]
+      );
+      return { id, ...ev, created_at };
+    },
+    async deleteEvaluacion(id) {
+      await db.run(`DELETE FROM evaluaciones WHERE id = ?`, [id]);
       return { success: true };
     }
   };
@@ -511,6 +629,22 @@ function getMockMemoryClient(): DBClient {
     },
     async deleteSession(id) {
       return { success: true };
+    },
+    async getEvaluaciones(patientId, tipo) {
+      return memoriaEvaluaciones.filter(e => (!patientId || e.patient_id === patientId) && (!tipo || e.tipo === tipo));
+    },
+    async createEvaluacion(ev) {
+      const row: EvaluacionRow = { id: `ev-${Date.now()}`, ...ev, created_at: new Date().toISOString() };
+      memoriaEvaluaciones.push(row);
+      return row;
+    },
+    async deleteEvaluacion(id) {
+      const i = memoriaEvaluaciones.findIndex(e => e.id === id);
+      if (i >= 0) memoriaEvaluaciones.splice(i, 1);
+      return { success: true };
     }
   };
 }
+
+// Almacén en memoria del proceso (se pierde al reiniciar; sólo para el modo sin base de datos).
+const memoriaEvaluaciones: EvaluacionRow[] = [];

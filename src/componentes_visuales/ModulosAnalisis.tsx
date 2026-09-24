@@ -59,11 +59,11 @@ const MODULOS: Modulo[] = [
     disponible: false,
   },
   {
-    href: '/analisis/proximamente?modulo=UPDRS+III',
+    href: '/analisis/updrs',
     icon: ClipboardList,
     title: '7. UPDRS III',
-    desc: 'Escala motora unificada de Parkinson.',
-    disponible: false,
+    desc: 'Examen motor ítem por ítem, asistido por cámara.',
+    disponible: true,
   },
 ];
 

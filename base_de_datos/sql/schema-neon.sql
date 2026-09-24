@@ -27,3 +27,16 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     datos_angulos TEXT NOT NULL, -- semi-colon separated raw angles
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Evaluaciones estructuradas (UPDRS III y futuras escalas). `datos` guarda
+-- el detalle ítem por ítem en JSON; `tipo` indica el formato ('UPDRS_III').
+CREATE TABLE IF NOT EXISTS public.evaluaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
+    modo VARCHAR(10) NOT NULL, -- 'PRE' or 'POST'
+    puntaje_total REAL,
+    datos JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS evaluaciones_patient_tipo_idx ON public.evaluaciones (patient_id, tipo);
