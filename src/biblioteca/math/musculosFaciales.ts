@@ -13,6 +13,14 @@
 
 export type ZonaFacial = 'LINEA_MEDIA' | 'IZQUIERDA' | 'DERECHA';
 
+/*
+ * LATERALIDAD: siempre del PACIENTE. La numeración de MediaPipe Face Mesh es
+ * anatómica (33, 61, 205… = hemicara DERECHA del paciente) y el video se
+ * procesa sin espejar, así que la hemicara derecha aparece a la IZQUIERDA de
+ * la imagen y del esquema (vista de frente, como mirando al paciente).
+ * Hasta la sesión 3 las etiquetas estaban invertidas; se corrigieron.
+ */
+
 export interface PuntoMuscular {
   id: string;
   musculo: string;
@@ -30,30 +38,37 @@ export const NODO_CANTO_EXTERNO_DER = 446;
 
 export const PUNTOS_MUSCULARES: PuntoMuscular[] = [
   { id: 'frontal-medio', musculo: 'Músculo frontal (Frontalis)', zona: 'LINEA_MEDIA', zonaLabel: 'Línea media', nodos: [10], pos: { x: 100, y: 36 } },
-  { id: 'frontal-izq', musculo: 'Músculo frontal (Frontalis)', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [67, 109], pos: { x: 66, y: 44 } },
-  { id: 'frontal-der', musculo: 'Músculo frontal (Frontalis)', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [297, 338], pos: { x: 134, y: 44 } },
+  { id: 'frontal-der', musculo: 'Músculo frontal (Frontalis)', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [67, 109], pos: { x: 66, y: 44 } },
+  { id: 'frontal-izq', musculo: 'Músculo frontal (Frontalis)', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [297, 338], pos: { x: 134, y: 44 } },
 
-  { id: 'corrugador-izq', musculo: 'Corrugador de la ceja', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [55, 65], pos: { x: 84, y: 77 } },
-  { id: 'corrugador-der', musculo: 'Corrugador de la ceja', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [285, 295], pos: { x: 116, y: 77 } },
+  { id: 'corrugador-der', musculo: 'Corrugador de la ceja', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [55, 65], pos: { x: 84, y: 77 } },
+  { id: 'corrugador-izq', musculo: 'Corrugador de la ceja', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [285, 295], pos: { x: 116, y: 77 } },
 
   { id: 'procerus-medio', musculo: 'Prócer (Procerus)', zona: 'LINEA_MEDIA', zonaLabel: 'Línea media', nodos: [9, 151], pos: { x: 100, y: 86 } },
 
-  { id: 'orbicular-ojos-izq', musculo: 'Orbicular de los ojos', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [33, 130, 226], pos: { x: 65, y: 112 } },
-  { id: 'orbicular-ojos-der', musculo: 'Orbicular de los ojos', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [362, 263, 359], pos: { x: 135, y: 112 } },
+  { id: 'orbicular-ojos-der', musculo: 'Orbicular de los ojos', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [33, 130, 226], pos: { x: 65, y: 112 } },
+  { id: 'orbicular-ojos-izq', musculo: 'Orbicular de los ojos', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [362, 263, 359], pos: { x: 135, y: 112 } },
 
-  { id: 'cigomaticos-izq', musculo: 'Cigomáticos mayor y menor', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [205, 214], pos: { x: 60, y: 154 } },
-  { id: 'cigomaticos-der', musculo: 'Cigomáticos mayor y menor', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [425, 434], pos: { x: 140, y: 154 } },
+  { id: 'cigomaticos-der', musculo: 'Cigomáticos mayor y menor', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [205, 214], pos: { x: 60, y: 154 } },
+  { id: 'cigomaticos-izq', musculo: 'Cigomáticos mayor y menor', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [425, 434], pos: { x: 140, y: 154 } },
 
   { id: 'orbicular-boca-medio', musculo: 'Orbicular de la boca', zona: 'LINEA_MEDIA', zonaLabel: 'Línea media (labios)', nodos: [0, 17], pos: { x: 100, y: 181 } },
-  { id: 'orbicular-boca-izq', musculo: 'Orbicular de la boca', zona: 'IZQUIERDA', zonaLabel: 'Comisura izquierda', nodos: [61], pos: { x: 80, y: 187 } },
-  { id: 'orbicular-boca-der', musculo: 'Orbicular de la boca', zona: 'DERECHA', zonaLabel: 'Comisura derecha', nodos: [291], pos: { x: 120, y: 187 } },
+  { id: 'orbicular-boca-der', musculo: 'Orbicular de la boca', zona: 'DERECHA', zonaLabel: 'Comisura derecha', nodos: [61], pos: { x: 80, y: 187 } },
+  { id: 'orbicular-boca-izq', musculo: 'Orbicular de la boca', zona: 'IZQUIERDA', zonaLabel: 'Comisura izquierda', nodos: [291], pos: { x: 120, y: 187 } },
 
-  { id: 'depresor-boca-izq', musculo: 'Depresor del ángulo de la boca', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [43, 204], pos: { x: 76, y: 204 } },
-  { id: 'depresor-boca-der', musculo: 'Depresor del ángulo de la boca', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [273, 424], pos: { x: 124, y: 204 } },
+  { id: 'depresor-boca-der', musculo: 'Depresor del ángulo de la boca', zona: 'DERECHA', zonaLabel: 'Hemicara derecha', nodos: [43, 204], pos: { x: 76, y: 204 } },
+  { id: 'depresor-boca-izq', musculo: 'Depresor del ángulo de la boca', zona: 'IZQUIERDA', zonaLabel: 'Hemicara izquierda', nodos: [273, 424], pos: { x: 124, y: 204 } },
 
   { id: 'mentoniano-medio', musculo: 'Mentoniano', zona: 'LINEA_MEDIA', zonaLabel: 'Línea media', nodos: [152, 175], pos: { x: 100, y: 226 } },
 ];
 
 export function etiquetaCompleta(p: PuntoMuscular): string {
   return `${p.musculo} — ${p.zonaLabel}`;
+}
+
+/** Punto homólogo de la hemicara opuesta (mismo músculo), o null si es de línea media. */
+export function puntoContralateral(p: PuntoMuscular): PuntoMuscular | null {
+  if (p.zona === 'LINEA_MEDIA') return null;
+  const opuesta: ZonaFacial = p.zona === 'IZQUIERDA' ? 'DERECHA' : 'IZQUIERDA';
+  return PUNTOS_MUSCULARES.find(q => q.musculo === p.musculo && q.zona === opuesta && q.zonaLabel.split(' ')[0] === p.zonaLabel.split(' ')[0]) ?? null;
 }

@@ -9,9 +9,7 @@ import {
   FRECUENCIA_REFERENCIA, MetricasRepetitivas, MetricasTemblor, Sugerencia,
 } from '@/biblioteca/math/ritmoMotor';
 
-export interface Punto { x: number; y: number }
-
-export type ModeloVision = 'MANO' | 'POSE';
+import { Punto, LandmarkRaw, ModeloVision, visibles } from '../vision/useVisionCapture';
 
 export interface ResultadoTarea {
   tipo: 'repetitivo' | 'temblor';
@@ -32,7 +30,7 @@ export interface ConfigTarea {
    * Convierte los landmarks de un cuadro (en píxeles) en una muestra.
    * Devuelve null si faltan puntos o la escala es inválida.
    */
-  extraer: (lm: Punto[], lado: LadoUpdrs) => Omit<Muestra, 't'> | null;
+  extraer: (lm: Punto[], lado: LadoUpdrs, raw: LandmarkRaw[]) => Omit<Muestra, 't'> | null;
   analizar: (muestras: Muestra[]) => ResultadoTarea;
   /** Señal sintética para el modo simulador. */
   simular: (t: number) => Omit<Muestra, 't'>;
@@ -225,9 +223,9 @@ export const TAREAS: Record<TareaCamara, ConfigTarea> = {
       pasoTiempo,
     ],
     nodos: lado => { const n = POSE[lado]; return [n.rodilla, n.tobillo, n.talon, n.punta]; },
-    extraer: (lm, lado) => {
+    extraer: (lm, lado, raw) => {
       const n = POSE[lado]; const pierna = d(lm[n.rodilla], lm[n.tobillo]);
-      if (!(pierna > 0)) return null;
+      if (!(pierna > 0) || !visibles(raw, [n.rodilla, n.tobillo, n.talon, n.punta])) return null;
       return { v: (lm[n.talon].y - lm[n.punta].y) / pierna };
     },
     analizar: repetitivo('GOLPETEO_PIE'),
@@ -245,9 +243,9 @@ export const TAREAS: Record<TareaCamara, ConfigTarea> = {
       pasoTiempo,
     ],
     nodos: lado => { const n = POSE[lado]; return [n.rodilla, n.tobillo]; },
-    extraer: (lm, lado) => {
+    extraer: (lm, lado, raw) => {
       const n = POSE[lado]; const pierna = d(lm[n.rodilla], lm[n.tobillo]);
-      if (!(pierna > 0)) return null;
+      if (!(pierna > 0) || !visibles(raw, [n.rodilla, n.tobillo])) return null;
       return { v: -lm[n.tobillo].y / pierna };
     },
     analizar: repetitivo('AGILIDAD_PIERNAS'),
@@ -278,11 +276,11 @@ export const TAREAS: Record<TareaCamara, ConfigTarea> = {
     titulo: 'Temblor de reposo (miembro superior)',
     modelo: 'MANO',
     duracionMs: DURACION,
-    consigna: 'Manos en reposo sobre el muslo',
-    escena: EscenaTemblor('Mano en reposo sobre el muslo · 10 s', false),
+    consigna: 'Manos en reposo sobre el apoyabrazos',
+    escena: EscenaTemblor('Mano en reposo sobre el apoyabrazos · 10 s', false),
     pasos: [
       pasoCamara('0,7 m', <>Paciente <b>sentado</b>, la mano evaluada completa en cuadro.</>),
-      { icon: Armchair, texto: <>Manos <b>relajadas sobre los muslos</b>, pies apoyados. Para hacer aparecer el temblor puede pedirse <b>cálculo mental</b> (restar de 7 en 7).</> },
+      { icon: Armchair, texto: <>Silla con apoyabrazos: manos <b>apoyadas en el apoyabrazos</b> (no en el regazo), pies en el suelo, <b>sin otra indicación</b>, como pide la MDS-UPDRS.</> },
       { icon: Eye, texto: <>La amplitud en cm es una <b>estimación</b> que asume una palma adulta de ~9,5 cm.</> },
       pasoTiempo,
     ],

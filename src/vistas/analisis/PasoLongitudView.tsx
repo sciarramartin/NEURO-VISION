@@ -11,6 +11,7 @@ import { useRecordingState } from '@/vistas/hooks/useRecordingState';
 import { useCaptureData } from '@/vistas/hooks/useCaptureData';
 import { analizarCicloMarcha } from '@/biblioteca/math/gait';
 import { InstructivoAnimado } from './InstructivoAnimado';
+import { InfoModulo } from './InfoModulo';
 
 const WebcamCapture = dynamic(() => import('@/componentes_visuales/WebcamCapture'), { ssr: false });
 
@@ -98,9 +99,12 @@ export function PasoLongitudView() {
         <ArrowLeft size={13} /> Volver al inicio
       </Link>
 
-      <div>
-        <h1 style={{ fontSize: 20 }}>Longitud del paso</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Análisis de marcha por video — amplitud de zancada estimada en centímetros.</p>
+      <div className="modulo-cabecera">
+        <div>
+          <h1 style={{ fontSize: 20 }}>Longitud del paso</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Análisis de marcha por video — amplitud de zancada estimada en centímetros.</p>
+        </div>
+        <InfoModulo modulo="paso" />
       </div>
 
       {fase === 'instrucciones' && (

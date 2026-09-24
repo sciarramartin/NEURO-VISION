@@ -111,19 +111,33 @@ export type Puntajes = Record<string, number | undefined>;
 
 export interface ResumenUpdrs {
   total: number;
+  /** Máximo posible con los ítems incluidos (132 en la versión completa). */
+  maximo: number;
   completos: number;
+  /** Puntuaciones esperadas con los ítems incluidos (33 en la versión completa). */
+  esperados: number;
   porGrupo: Record<GrupoUpdrs, number>;
+  maximoPorGrupo: Record<GrupoUpdrs, number>;
   derecha: number;
   izquierda: number;
   /** (D − I) / (D + I) × 100. Positivo = peor a derecha. */
   asimetria: number | null;
 }
 
-export function resumirPuntajes(p: Puntajes): ResumenUpdrs {
-  const porGrupo: Record<GrupoUpdrs, number> = { global: 0, rigidez: 0, bradicinesia: 0, axial: 0, temblor: 0 };
-  let total = 0, completos = 0, derecha = 0, izquierda = 0;
-  for (const item of ITEMS_UPDRS3) {
+const GRUPOS_VACIOS = (): Record<GrupoUpdrs, number> => ({ global: 0, rigidez: 0, bradicinesia: 0, axial: 0, temblor: 0 });
+
+/** `excluidos`: números de ítem (p. ej. '3.3') que no forman parte de la versión personalizada. */
+export function itemsIncluidos(excluidos: string[] = []): ItemUpdrs[] {
+  return ITEMS_UPDRS3.filter(i => !excluidos.includes(i.numero));
+}
+
+export function resumirPuntajes(p: Puntajes, excluidos: string[] = []): ResumenUpdrs {
+  const porGrupo = GRUPOS_VACIOS(), maximoPorGrupo = GRUPOS_VACIOS();
+  let total = 0, completos = 0, esperados = 0, derecha = 0, izquierda = 0;
+  for (const item of itemsIncluidos(excluidos)) {
     for (const s of item.subitems) {
+      esperados++;
+      maximoPorGrupo[item.grupo] += 4;
       const v = p[s.id];
       if (v === undefined) continue;
       completos++;
@@ -134,7 +148,7 @@ export function resumirPuntajes(p: Puntajes): ResumenUpdrs {
     }
   }
   const asimetria = derecha + izquierda > 0 ? ((derecha - izquierda) / (derecha + izquierda)) * 100 : null;
-  return { total, completos, porGrupo, derecha, izquierda, asimetria };
+  return { total, maximo: esperados * 4, completos, esperados, porGrupo, maximoPorGrupo, derecha, izquierda, asimetria };
 }
 
 export const ETIQUETAS_GRUPO: Record<GrupoUpdrs, string> = {
@@ -145,28 +159,104 @@ export const ETIQUETAS_GRUPO: Record<GrupoUpdrs, string> = {
   temblor: 'Temblor',
 };
 
-export const MAXIMO_POR_GRUPO: Record<GrupoUpdrs, number> = ITEMS_UPDRS3.reduce((acc, i) => {
-  acc[i.grupo] = (acc[i.grupo] ?? 0) + i.subitems.length * 4;
-  return acc;
-}, {} as Record<GrupoUpdrs, number>);
 
 /** Estadios de Hoehn y Yahr (versión modificada usada junto a la MDS-UPDRS). */
 export const HOEHN_YAHR = ['0', '1', '1.5', '2', '2.5', '3', '4', '5'] as const;
 
+export type Modalidad = 'UNICA' | 'LEVODOPA';
+
 export interface ContextoUpdrs {
+  modalidad: Modalidad;
   medicacion: 'ON' | 'OFF' | 'SIN_MEDICACION';
   estimulacion: 'ON' | 'OFF' | 'NO_APLICA';
   minutosUltimaDosis: number | null;
+  /** Test de levodopa */
+  horasLavado: number | null;
+  dosisPruebaMg: number | null;
+  /** Versión personalizada: ítems excluidos (vacío = versión completa). */
+  itemsExcluidos: string[];
+}
+
+export const CONTEXTO_INICIAL: ContextoUpdrs = {
+  modalidad: 'UNICA',
+  medicacion: 'OFF',
+  estimulacion: 'NO_APLICA',
+  minutosUltimaDosis: null,
+  horasLavado: 12,
+  dosisPruebaMg: null,
+  itemsExcluidos: [],
+};
+
+/**
+ * Una "toma" es una aplicación completa (o personalizada) de la Parte III.
+ * Evaluación única = 1 toma. Test de levodopa = OFF basal + ON a los 30/60/90 min.
+ */
+export interface Toma<M = unknown> {
+  id: string;
+  etiqueta: string;
+  estado: 'OFF' | 'ON';
+  /** Minutos tras la dosis de prueba (null en OFF basal o evaluación única). */
+  minutos: number | null;
+  puntajes: Puntajes;
+  mediciones: Record<string, M>;
   discinesiasPresentes: boolean | null;
   discinesiasInterfirieron: boolean | null;
   hoehnYahr: string | null;
 }
 
-export const CONTEXTO_INICIAL: ContextoUpdrs = {
-  medicacion: 'OFF',
-  estimulacion: 'NO_APLICA',
-  minutosUltimaDosis: null,
-  discinesiasPresentes: null,
-  discinesiasInterfirieron: null,
-  hoehnYahr: null,
-};
+export const MINUTOS_ON = [30, 60, 90] as const;
+
+export function nuevaToma<M>(id: string, etiqueta: string, estado: 'OFF' | 'ON', minutos: number | null): Toma<M> {
+  return { id, etiqueta, estado, minutos, puntajes: {}, mediciones: {}, discinesiasPresentes: null, discinesiasInterfirieron: null, hoehnYahr: null };
+}
+
+export function tomasIniciales<M>(ctx: ContextoUpdrs, minutosOn: number[]): Toma<M>[] {
+  if (ctx.modalidad === 'UNICA') {
+    const et = ctx.medicacion === 'ON' ? 'ON' : ctx.medicacion === 'OFF' ? 'OFF' : 'Sin medicación';
+    return [nuevaToma<M>('UNICA', et, ctx.medicacion === 'ON' ? 'ON' : 'OFF', null)];
+  }
+  return [
+    nuevaToma<M>('OFF', 'OFF basal', 'OFF', null),
+    ...minutosOn.map(m => nuevaToma<M>(`ON${m}`, `ON ${m} min`, 'ON', m)),
+  ];
+}
+
+/** Umbral habitual de respuesta a levodopa para candidatura a DBS (CAPSIT-PD). */
+export const UMBRAL_RESPUESTA_LEVODOPA = 33;
+
+export interface RespuestaLevodopa {
+  off: number;
+  mejorOn: { id: string; etiqueta: string; minutos: number | null; total: number } | null;
+  /** % de mejoría del mejor ON respecto del OFF. */
+  mejoria: number | null;
+  porToma: { id: string; etiqueta: string; total: number; mejoria: number | null; completa: boolean }[];
+  /** % de mejoría por dominio en el mejor ON. */
+  porGrupo: Record<GrupoUpdrs, number | null>;
+  positiva: boolean | null;
+}
+
+export function respuestaLevodopa<M>(tomas: Toma<M>[], excluidos: string[]): RespuestaLevodopa | null {
+  const off = tomas.find(t => t.estado === 'OFF');
+  const ons = tomas.filter(t => t.estado === 'ON');
+  if (!off || !ons.length) return null;
+  const rOff = resumirPuntajes(off.puntajes, excluidos);
+  const pct = (a: number, b: number) => (a > 0 ? ((a - b) / a) * 100 : null);
+  const porToma = tomas.map(t => {
+    const r = resumirPuntajes(t.puntajes, excluidos);
+    return { id: t.id, etiqueta: t.etiqueta, total: r.total, mejoria: t.estado === 'ON' && r.completos > 0 ? pct(rOff.total, r.total) : null, completa: r.completos === r.esperados };
+  });
+  const onsConDatos = ons.map(t => ({ t, r: resumirPuntajes(t.puntajes, excluidos) })).filter(x => x.r.completos > 0);
+  if (!onsConDatos.length || rOff.completos === 0) {
+    return { off: rOff.total, mejorOn: null, mejoria: null, porToma, porGrupo: { global: null, rigidez: null, bradicinesia: null, axial: null, temblor: null }, positiva: null };
+  }
+  const mejor = onsConDatos.reduce((a, b) => (b.r.total < a.r.total ? b : a));
+  const mejoria = pct(rOff.total, mejor.r.total);
+  const porGrupo = {} as Record<GrupoUpdrs, number | null>;
+  (Object.keys(rOff.porGrupo) as GrupoUpdrs[]).forEach(g => { porGrupo[g] = pct(rOff.porGrupo[g], mejor.r.porGrupo[g]); });
+  return {
+    off: rOff.total,
+    mejorOn: { id: mejor.t.id, etiqueta: mejor.t.etiqueta, minutos: mejor.t.minutos, total: mejor.r.total },
+    mejoria, porToma, porGrupo,
+    positiva: mejoria === null ? null : mejoria >= UMBRAL_RESPUESTA_LEVODOPA,
+  };
+}

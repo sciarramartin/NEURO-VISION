@@ -57,10 +57,13 @@ export function useCountdown7s({ duracionMs = 7000, onIniciar, onFinalizar }: Us
     setMsRestantes(duracionMs);
   }, [duracionMs]);
 
+  /** Termina la captura antes de tiempo (p. ej. la marcha ya salió de cuadro). */
+  const detener = useCallback(() => { finRef.current = performance.now(); }, []);
+
   useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
 
   const segundos = Math.ceil(msRestantes / 1000);
   const progreso = 1 - msRestantes / duracionMs; // 0 -> 1
 
-  return { fase, segundos, progreso, iniciar, reiniciar };
+  return { fase, segundos, progreso, iniciar, reiniciar, detener };
 }

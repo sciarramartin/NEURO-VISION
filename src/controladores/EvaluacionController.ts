@@ -1,6 +1,6 @@
 import { Evaluacion } from '@/modelos/Evaluacion';
 
-const TIPOS_VALIDOS = ['UPDRS_III'];
+const TIPOS_VALIDOS = ['UPDRS_III', 'EXPRESION_FACIAL', 'PROGRAMACION_DBS'];
 const MODOS_VALIDOS = ['PRE', 'POST'];
 
 export class EvaluacionController {

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
-  ArrowLeft, Camera, Ruler, Shirt, Activity as ActivityIcon, Save, RotateCcw, ChevronRight
+  ArrowLeft, Camera, Ruler, Shirt, Activity as ActivityIcon, Save, RotateCcw, ChevronRight, ArrowLeftRight
 } from 'lucide-react';
 import { useRecordingState } from '@/vistas/hooks/useRecordingState';
 import { useCaptureData } from '@/vistas/hooks/useCaptureData';
@@ -12,6 +12,7 @@ import { RegionKey, LadoKey } from '@/biblioteca/math/angles';
 import { InstructivoAnimado } from './InstructivoAnimado';
 import { CapturaTimerRing } from './CapturaTimerRing';
 import { useCountdown7s } from './useCountdown7s';
+import { InfoModulo } from './InfoModulo';
 
 const WebcamCapture = dynamic(() => import('@/componentes_visuales/WebcamCapture'), { ssr: false });
 
@@ -99,6 +100,13 @@ export function GoniometroView() {
     setCapturedRaw([]); setResultado(null); setAviso(null); countdown.reiniciar(); setFase('instrucciones');
   };
 
+  /** Misma articulación, lado opuesto: directo a la captura, sin repetir el instructivo. */
+  const ladoOpuesto: LadoKey = lado === 'DERECHA' ? 'IZQUIERDA' : 'DERECHA';
+  const medirContralateral = () => {
+    setLado(ladoOpuesto);
+    setCapturedRaw([]); setResultado(null); setAviso(null); countdown.reiniciar(); setFase('captura');
+  };
+
   const articulacionLabel = ARTICULACIONES.find(a => a.key === region)?.label ?? region;
 
   return (
@@ -107,9 +115,12 @@ export function GoniometroView() {
         <ArrowLeft size={13} /> Volver al inicio
       </Link>
 
-      <div>
-        <h1 style={{ fontSize: 20 }}>Goniómetro</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rango de movimiento activo, articulación por articulación.</p>
+      <div className="modulo-cabecera">
+        <div>
+          <h1 style={{ fontSize: 20 }}>Goniómetro</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rango de movimiento activo, articulación por articulación.</p>
+        </div>
+        <InfoModulo modulo="goniometro" />
       </div>
 
       {fase === 'articulacion' && (
@@ -234,9 +245,14 @@ export function GoniometroView() {
             </button>
           </div>
 
-          <button type="button" onClick={reiniciar} className="btn btn-outline" style={{ alignSelf: 'flex-start' }}>
-            <RotateCcw size={13} /> Repetir medición
-          </button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button type="button" onClick={medirContralateral} className="btn btn-primary">
+              <ArrowLeftRight size={14} /> Medir {articulacionLabel.toLowerCase()} {ladoOpuesto === 'DERECHA' ? 'derecho/a' : 'izquierdo/a'}
+            </button>
+            <button type="button" onClick={reiniciar} className="btn btn-outline">
+              <RotateCcw size={13} /> Repetir medición
+            </button>
+          </div>
         </div>
       )}
     </div>

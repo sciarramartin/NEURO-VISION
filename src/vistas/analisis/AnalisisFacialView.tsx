@@ -3,9 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, ArrowRight, Camera, Ruler, ScanFace, Save, RotateCcw
+  ArrowLeft, ArrowRight, Camera, Ruler, ScanFace, Save, RotateCcw, ArrowLeftRight, Smile, Crosshair
 } from 'lucide-react';
-import { PuntoMuscular, etiquetaCompleta } from '@/biblioteca/math/musculosFaciales';
+import { PuntoMuscular, etiquetaCompleta, puntoContralateral } from '@/biblioteca/math/musculosFaciales';
+import { ExpresionFacialFlow } from './facial/ExpresionFacialFlow';
+import { GuardarEvaluacion } from '@/vistas/componentes/GuardarEvaluacion';
+import { InfoModulo } from './InfoModulo';
 import { useCaptureData } from '@/vistas/hooks/useCaptureData';
 import { FaceMuscleSelector } from './FaceMuscleSelector';
 import { InstructivoAnimado } from './InstructivoAnimado';
@@ -13,7 +16,7 @@ import { CapturaTimerRing } from './CapturaTimerRing';
 import { useCountdown7s } from './useCountdown7s';
 import { useFacialMuscleCapture, MuestraMuscular } from './useFacialMuscleCapture';
 
-type Fase = 'seleccion' | 'instrucciones' | 'captura' | 'resultado';
+type Fase = 'tipo' | 'seleccion' | 'instrucciones' | 'captura' | 'resultado' | 'global';
 
 const PASOS_INSTRUCTIVO = [
   { icon: Camera, texto: <>Cámara <b>fija</b>, a unos <b>0,5 metros</b> del rostro.</> },
@@ -22,7 +25,7 @@ const PASOS_INSTRUCTIVO = [
 ];
 
 export function AnalisisFacialView() {
-  const [fase, setFase] = useState<Fase>('seleccion');
+  const [fase, setFase] = useState<Fase>('tipo');
   const [punto, setPunto] = useState<PuntoMuscular | null>(null);
   const [isMockMode, setIsMockMode] = useState(true);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -89,16 +92,72 @@ export function AnalisisFacialView() {
     setData([]); setAmplitud(null); setAviso(null); setGuardado(false); countdown.reiniciar(); setFase('seleccion');
   };
 
+  /** Mismo músculo, hemicara opuesta: directo a la captura (la cámara ya está activa). */
+  const contralateral = punto ? puntoContralateral(punto) : null;
+  const medirContralateral = () => {
+    if (!contralateral) return;
+    setPunto(contralateral);
+    setData([]); setAmplitud(null); setAviso(null); setGuardado(false); countdown.reiniciar(); setFase('captura');
+  };
+
   return (
     <div className="main-content">
       <Link href="/" className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontSize: 11, padding: '6px 12px' }}>
         <ArrowLeft size={13} /> Volver al inicio
       </Link>
 
-      <div>
+      <div className="modulo-cabecera">
+        <div>
         <h1 style={{ fontSize: 20 }}>Análisis facial</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Seleccione un músculo y evalúe su amplitud de contracción.</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Músculo por músculo, o expresión máxima global.</p>
+        </div>
+        <InfoModulo modulo="facial" />
       </div>
+
+      {fase === 'tipo' && (
+        <div className="card" style={{ maxWidth: 560, width: '100%', margin: '0 auto', gap: 12 }}>
+          <div className="section-header">¿Qué desea evaluar?</div>
+          <button type="button" className="grupo-muscular-item" onClick={() => setFase('global')} style={{ padding: 14 }}>
+            <span style={{ display: 'flex', gap: 12, alignItems: 'center', textAlign: 'left' }}>
+              <Smile size={18} />
+              <span><span style={{ display: 'block' }}>Expresión máxima global</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>Pico, cejas y sonrisa en una secuencia de 15 s · derecha vs. izquierda</span></span>
+            </span>
+            <ArrowRight size={14} />
+          </button>
+          <button type="button" className="grupo-muscular-item" onClick={() => setFase('seleccion')} style={{ padding: 14 }}>
+            <span style={{ display: 'flex', gap: 12, alignItems: 'center', textAlign: 'left' }}>
+              <Crosshair size={18} />
+              <span><span style={{ display: 'block' }}>Músculo específico</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>Relajación → contracción máxima de un músculo y hemicara</span></span>
+            </span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
+
+      {fase === 'global' && (
+        <>
+          <button type="button" className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontSize: 11, padding: '6px 12px' }} onClick={() => setFase('tipo')}>
+            <ArrowLeft size={13} /> Cambiar tipo de evaluación
+          </button>
+          <ExpresionFacialFlow acciones={(r, repetir) => (
+            <>
+              <div className="section-divider" />
+              <GuardarEvaluacion tipo="EXPRESION_FACIAL" puntajeTotal={r.indiceGlobal} datos={{ version: 1, resultado: r }} />
+              <button type="button" onClick={repetir} className="btn btn-outline" style={{ alignSelf: 'flex-start' }}>
+                <RotateCcw size={13} /> Repetir medición
+              </button>
+            </>
+          )} />
+        </>
+      )}
+
+      {fase === 'seleccion' && (
+        <button type="button" className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontSize: 11, padding: '6px 12px' }} onClick={() => setFase('tipo')}>
+          <ArrowLeft size={13} /> Cambiar tipo de evaluación
+        </button>
+      )}
 
       {fase === 'seleccion' && (
         <div className="card" style={{ maxWidth: 460, margin: '0 auto', gap: 16 }}>
@@ -193,9 +252,16 @@ export function AnalisisFacialView() {
             </button>
           </div>
 
-          <button type="button" onClick={reiniciar} className="btn btn-outline" style={{ alignSelf: 'flex-start' }}>
-            <RotateCcw size={13} /> Evaluar otro músculo
-          </button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {contralateral && (
+              <button type="button" onClick={medirContralateral} className="btn btn-primary">
+                <ArrowLeftRight size={14} /> Medir {contralateral.zonaLabel.toLowerCase()}
+              </button>
+            )}
+            <button type="button" onClick={reiniciar} className="btn btn-outline">
+              <RotateCcw size={13} /> Evaluar otro músculo
+            </button>
+          </div>
         </div>
       )}
     </div>

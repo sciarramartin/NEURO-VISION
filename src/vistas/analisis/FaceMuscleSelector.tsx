@@ -16,6 +16,9 @@ function EsquemaRostro() {
       {/* orejas */}
       <ellipse cx="28" cy="140" rx="8" ry="16" fill="var(--bg-base)" stroke="var(--border-hover)" strokeWidth="1.5" />
       <ellipse cx="172" cy="140" rx="8" ry="16" fill="var(--bg-base)" stroke="var(--border-hover)" strokeWidth="1.5" />
+      {/* Lateralidad del paciente (vista de frente): su derecha queda a la izquierda del esquema */}
+      <text x="10" y="20" fontSize="10" fontWeight="700" fill="var(--text-muted)" fontFamily="var(--font-mono)">D</text>
+      <text x="184" y="20" fontSize="10" fontWeight="700" fill="var(--text-muted)" fontFamily="var(--font-mono)">I</text>
       {/* ojos (referencia) */}
       <ellipse cx="70" cy="115" rx="10" ry="5" fill="none" stroke="var(--border-card)" strokeWidth="1" />
       <ellipse cx="130" cy="115" rx="10" ry="5" fill="none" stroke="var(--border-card)" strokeWidth="1" />

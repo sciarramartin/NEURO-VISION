@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  Footprints, Ruler, ScanFace, FlaskConical, Waves, RotateCcw, ClipboardList,
+  Footprints, Ruler, ScanFace, FlaskConical, Waves, RotateCcw, ClipboardList, SlidersHorizontal,
   LucideIcon
 } from 'lucide-react';
 
@@ -34,7 +34,7 @@ const MODULOS: Modulo[] = [
     href: '/analisis/facial',
     icon: ScanFace,
     title: '3. Análisis facial',
-    desc: 'Selección de músculo y contracción guiada.',
+    desc: 'Músculo específico o expresión máxima global.',
     disponible: true,
   },
   {
@@ -63,6 +63,13 @@ const MODULOS: Modulo[] = [
     icon: ClipboardList,
     title: '7. UPDRS III',
     desc: 'Examen motor ítem por ítem, asistido por cámara.',
+    disponible: true,
+  },
+  {
+    href: '/analisis/programacion-dbs',
+    icon: SlidersHorizontal,
+    title: '8. Modo programador DBS',
+    desc: 'Firmas motoras por programa y comparación.',
     disponible: true,
   },
 ];
