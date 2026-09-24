@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApp } from '@/contexto_global/AppContext';
 import { Session } from '@/biblioteca/types/database';
 import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
+import { ModulosAnalisis } from '@/componentes_visuales/ModulosAnalisis';
 import {
   Play, FileText, Search,
   Trash2, UserPlus, TrendingUp, Info
@@ -138,7 +139,7 @@ export function DashboardView() {
           <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
             <div>
               <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>Portal Clínico</h1>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Panel de evaluación facial de la enfermedad de Parkinson.</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Evaluación de movilidad facial y corporal en la enfermedad de Parkinson.</p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-secondary" style={{ fontSize: 11, padding: '7px 14px' }}>
@@ -150,6 +151,13 @@ export function DashboardView() {
             </div>
           </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              Nuevo análisis
+              <TooltipAyuda posicion="top" texto="Acceso rápido a los módulos de evaluación clínica. Los módulos 4 a 7 están en desarrollo." />
+            </h3>
+            <ModulosAnalisis />
+          </div>
 
 
           {showAddForm && (
@@ -158,7 +166,7 @@ export function DashboardView() {
                 <UserPlus size={15} style={{ color: 'var(--accent)' }} /> Crear Perfil de Paciente
                 <TooltipAyuda posicion="top" texto="Registre un nuevo paciente ingresando su nombre completo. La fecha de nacimiento puede agregarse después." />
               </h3>
-              <form onSubmit={handleAddPatient} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'end' }}>
+              <form onSubmit={handleAddPatient} className="responsive-form-2fr1fr" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'end' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Nombre Completo</label>
                   <input type="text" value={newPatientName} onChange={(e) => setNewPatientName(e.target.value)} placeholder="Ej. Carmen Rodriguez" className="input-text" required />
@@ -171,7 +179,7 @@ export function DashboardView() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
+          <div className="responsive-split-2fr1fr" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>Listado de Pacientes<TooltipAyuda posicion="top" texto="Pacientes registrados en el sistema. Use el buscador para filtrar por nombre." /></h3>

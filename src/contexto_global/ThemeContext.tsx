@@ -1,51 +1,33 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
-type Theme = 'dark' | 'light';
+/**
+ * NEUROVISION trabaja con un único tema (oscuro), por diseño: la identidad
+ * visual (incluido el logo de tres puntos) está pensada sobre fondo oscuro.
+ *
+ * Antes existía un selector claro/oscuro que no tenía ningún efecto real:
+ * alternaba el atributo `data-theme` correctamente, pero `globals.css`
+ * nunca definió variables de color para el tema claro. En vez de construir
+ * un segundo tema completo, se fija el oscuro como único modo soportado
+ * y se retira el control roto de la interfaz.
+ */
+type Theme = 'dark';
 
 interface ThemeContextValue {
   theme: Theme;
-  toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'dark',
-  toggleTheme: () => {}
-});
+const ThemeContext = createContext<ThemeContextValue>({ theme: 'dark' });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
-
-  // Persist to localStorage and apply data-theme attribute
   useEffect(() => {
-    const saved = localStorage.getItem('nv-theme') as Theme | null;
-    const initial = saved ?? 'dark';
-    setTheme(initial);
-    document.documentElement.setAttribute('data-theme', initial);
-    if (initial === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('dark');
   }, []);
 
-  const toggleTheme = () => {
-    setTheme(prev => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('nv-theme', next);
-      document.documentElement.setAttribute('data-theme', next);
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      return next;
-    });
-  };
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark' }}>
       {children}
     </ThemeContext.Provider>
   );

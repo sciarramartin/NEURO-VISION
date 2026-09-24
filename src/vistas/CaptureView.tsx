@@ -14,7 +14,7 @@ import { useAccelerometer } from './hooks/useAccelerometer';
 import {
   Camera, Circle, Square, Crosshair, ChevronDown, ChevronUp,
   Eye, EyeOff, RotateCcw, Info, AlertTriangle, Check,
-  Activity, Zap, Save
+  Activity, Zap, Save, Sun, Ruler, Focus, X
 } from 'lucide-react';
 import { TooltipAyuda } from '@/componentes_visuales/TooltipAyuda';
 
@@ -370,12 +370,12 @@ export function CaptureView() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, fontSize: 10, color: 'var(--text-muted)', width: '100%', maxWidth: 360 }}>
                   {[
-                    { icon: '💡', text: 'Iluminación uniforme' },
-                    { icon: '📏', text: '40–60 cm de distancia' },
-                    { icon: '🎯', text: 'Alineación horizontal' },
-                  ].map(({ icon, text }) => (
+                    { Icon: Sun, text: 'Iluminación uniforme' },
+                    { Icon: Ruler, text: '40–60 cm de distancia' },
+                    { Icon: Focus, text: 'Alineación horizontal' },
+                  ].map(({ Icon, text }) => (
                     <div key={text} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 10, background: 'var(--bg-base)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-card)' }}>
-                      <span style={{ fontSize: 16, lineHeight: 1 }}>{icon}</span>
+                      <Icon size={16} style={{ color: 'var(--text-muted)' }} />
                       <span style={{ fontWeight: 600, fontSize: 10 }}>{text}</span>
                     </div>
                   ))}
@@ -559,8 +559,8 @@ export function CaptureView() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span className="chip" style={{ fontSize: 10 }}>{isSet ? `#${slotsPersonalizados[i]}` : '—'}</span>
                           {isSet && (
-                            <button type="button" onClick={() => resetSlot(i)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: 2 }}>
-                              ✕
+                            <button type="button" onClick={() => resetSlot(i)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                              <X size={12} />
                             </button>
                           )}
                         </div>
