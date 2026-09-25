@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,100..900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400..700&family=Google+Sans+Code:wght@400..700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -8,15 +8,15 @@
 /*
  * NEUROVISION — tema único (oscuro), estética sobria estilo Google:
  * fondo negro absoluto (#000) con blancos de alto contraste; superficies
- * neutras apenas elevadas para separar tarjetas (sin tinte violeta), tipografía Google Sans Flex
- * (variante gratuita y oficial de Google Sans, liberada en Google Fonts
- * bajo licencia SIL Open Font License), acentos verdes existentes.
+ * neutras apenas elevadas para separar tarjetas (sin tinte violeta), tipografía Google Sans
+ * (publicada libre en Google Fonts; Google Sans Code para cifras/etiquetas
+ * técnicas), acentos verdes existentes.
  * No existe modo claro: se retiró el selector porque nunca tuvo valores
  * propios definidos (ver informe de análisis del repositorio).
  */
 :root {
-  --font-sans: 'Google Sans Flex', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-sans: 'Google Sans', 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: 'Google Sans Code', 'Roboto Mono', 'Courier New', monospace;
 
   --bg-base:       #000000;
   --bg-card:       #0E0E0F;
