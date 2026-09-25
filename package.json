@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node -e \"const { spawn } = require('child_process'); spawn('npx', ['@tailwindcss/cli', '-i', './src/app/globals.css', '-o', './src/app/globals.compiled.css', '--watch'], { stdio: 'inherit', shell: true }); spawn('next', ['dev'], { stdio: 'inherit', shell: true });\"",
-    "build": "prisma generate && prisma db push --accept-data-loss && npx @tailwindcss/cli -i ./src/app/globals.css -o ./src/app/globals.compiled.css && next build",
+    "build": "prisma generate && node herramientas/db-push-si-hay-base.mjs && npx @tailwindcss/cli -i ./src/app/globals.css -o ./src/app/globals.compiled.css && next build",
     "start": "next start",
     "lint": "eslint"
   },

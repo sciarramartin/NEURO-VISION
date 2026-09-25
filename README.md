@@ -34,3 +34,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Deploy de demostración en Vercel (rama MARIANO)
+
+- Importar el repo en Vercel, framework **Next.js**, y en *Settings → Git → Production Branch* poner `MARIANO` (o usar el link de *Preview* de esa rama).
+- Sin variables de entorno, el build omite `prisma db push` (`herramientas/db-push-si-hay-base.mjs`) y la app corre en **modo demostración**: pacientes simulados y datos guardados sólo en memoria (se pierden al reiniciarse el servidor).
+- Para datos reales, cargar `DATABASE_URL` (PostgreSQL) en *Settings → Environment Variables* y volver a desplegar: el build crea/actualiza las tablas, incluida `evaluaciones`.
